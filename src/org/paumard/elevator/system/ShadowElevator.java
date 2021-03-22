@@ -50,9 +50,6 @@ public class ShadowElevator {
         this.currentFloor = nextFloor;
     }
 
-    public void setDirection(Direction direction) {
-    }
-
     public void setNextFloor(int nextFloor) {
         this.nextFloor = nextFloor;
     }

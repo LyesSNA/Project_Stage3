@@ -24,7 +24,7 @@ public class DumbElevator implements Elevator {
 
     @Override
     public int chooseNextFloor() {
-        return 0;
+        return 1;
     }
 
     @Override

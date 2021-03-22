@@ -1,5 +1,6 @@
 package org.paumard.elevator.event;
 
+import org.paumard.elevator.Building;
 import org.paumard.elevator.Elevator;
 import org.paumard.elevator.system.ShadowElevator;
 import org.paumard.elevator.model.Direction;
@@ -89,11 +90,10 @@ public class Event {
         elevator.startsAtFloor(time, currentFloor);
         shadowElevator.startsAtFloor(currentFloor);
 
-        int nextFloor = elevator.chooseNextFloor();
+        int nextFloor = readNextFloorFrom(elevator);
         printElevatorGoingTo(time, currentFloor, nextFloor);
 
         Direction direction = computeDirection(currentFloor, nextFloor);
-        shadowElevator.setDirection(direction);
         shadowElevator.setNextFloor(nextFloor);
 
         if (direction == Direction.STOP) {
@@ -124,6 +124,14 @@ public class Event {
         return event;
     }
 
+    private static int readNextFloorFrom(Elevator elevator) {
+        int nextFloor = elevator.chooseNextFloor();
+        if (nextFloor < 1 || nextFloor > Building.MAX_FLOOR) {
+            throw new IllegalStateException("Elevator returned floor " + nextFloor);
+        }
+        return nextFloor;
+    }
+
     public static Event fromArrivesAtFloor(LocalTime time, Elevator elevator, ShadowElevator shadowElevator) {
         int currentFloor = shadowElevator.getNextFloor();
         elevator.arriveAtFloor(currentFloor);
@@ -148,11 +156,10 @@ public class Event {
 
         } else {
 
-            int nextFloor = elevator.chooseNextFloor();
+            int nextFloor = readNextFloorFrom(elevator);
             printElevatorGoingTo(time, currentFloor, nextFloor);
 
             Direction direction = computeDirection(currentFloor, nextFloor);
-            shadowElevator.setDirection(direction);
             shadowElevator.setNextFloor(nextFloor);
 
             if (direction == Direction.STOP) {
@@ -201,16 +208,12 @@ public class Event {
         if (shadowElevator.isAnyoneWaitingAtCurrentFloor()) {
             Person nextPersonToLoad = shadowElevator.getNextPersonToLoadFromCurrentFloor().orElseThrow();
             int nextFloor = nextPersonToLoad.getDestinationFloor();
-            Direction direction = computeDirection(currentFloor, nextFloor);
-            shadowElevator.setDirection(direction);
             shadowElevator.setNextFloor(nextFloor);
             return new LoadingFirstPerson(nextPersonToLoad);
 
         } else if (shadowElevator.isAnyoneWaitingAtOtherFloor()) {
-            int nextFloor = elevator.chooseNextFloor();
+            int nextFloor = readNextFloorFrom(elevator);
             printElevatorGoingTo(time, currentFloor, nextFloor);
-            Direction direction = computeDirection(currentFloor, nextFloor);
-            shadowElevator.setDirection(direction);
             shadowElevator.setNextFloor(nextFloor);
             if (nextFloor == shadowElevator.getCurrentFloor()) {
                 Optional<Person> nextPersonToLoad = shadowElevator.getNextPersonToLoad(nextFloor, currentFloor);
@@ -295,11 +298,10 @@ public class Event {
 
         } else {
 
-            int nextFloor = elevator.chooseNextFloor();
+            int nextFloor = readNextFloorFrom(elevator);
             printElevatorGoingTo(time, currentFloor, nextFloor);
 
             Direction direction = computeDirection(currentFloor, nextFloor);
-            shadowElevator.setDirection(direction);
             shadowElevator.setNextFloor(nextFloor);
 
             if (direction == Direction.STOP) {
