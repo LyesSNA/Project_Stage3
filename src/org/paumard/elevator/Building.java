@@ -4,21 +4,23 @@ import org.paumard.elevator.event.Event;
 import org.paumard.elevator.model.Person;
 import org.paumard.elevator.model.WaitingList;
 import org.paumard.elevator.student.DumbElevator;
+import org.paumard.elevator.student.JoseElevator;
 import org.paumard.elevator.system.ShadowElevator;
 
+import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Building {
 
-    public static final int ELEVATOR_CAPACITY = 5;
-    public static final int MAX_FLOOR = 4;
-    public static final LocalTime START_TIME = LocalTime.of(6, 0, 0); // 6h 0mn 0s
-    public static final int MAX_PEOPLE_ARRIVING = 50;
-    public static final int MAX_NUMBER_OF_PEOPLE_IN_LINE = 7;
-
-    public static final float PROBABILITY_TO_SEE_A_NEW_PERSON_IN_LINE = 0.025f;
-    public static Random random = new Random(10L);
+    public static final int ELEVATOR_CAPACITY = 15;
+    public static final int ELEVATOR_LOADING_CAPACITY = 3;
+    public static final int MAX_DISPLAYED_FLOORS = 5;
+    public static final int MAX_FLOOR = 10;
+    public static final LocalTime START_TIME = LocalTime.of(6, 0, 0);
+    public static final LocalTime END_TIME = LocalTime.of(8, 30, 0);
+    public static final LocalTime END_OF_DAY = LocalTime.of(9, 30, 0);
 
     public static void main(String[] args) {
 
@@ -31,21 +33,26 @@ public class Building {
         WaitingList peopleWaitingPerFloor = new WaitingList();
         Elevator elevator = new DumbElevator(ELEVATOR_CAPACITY);
 
+
         int totalNumberOfPeople = peopleWaitingPerFloor.countPeople();
         elevator.peopleWaiting(peopleWaitingPerFloor.getLists());
         ShadowElevator shadowElevator = new ShadowElevator(ELEVATOR_CAPACITY, peopleWaitingPerFloor);
 
-        printInitInfos(peopleWaitingPerFloor, totalNumberOfPeople);
+        peopleWaitingPerFloor.print();
 
-        while (totalNumberOfPeople < MAX_PEOPLE_ARRIVING || !shadowElevator.isStopped()) {
+        while (!shadowElevator.isStopped() && time.isBefore(END_OF_DAY)) {
+
+            elevator.timeIs(time);
+
+            if (time.equals(END_TIME)) {
+                System.out.printf("\n[%s]No more people are coming.\n", time.toString());
+                shadowElevator.lastPersonArrived();
+                elevator.lastPersonArrived();
+            }
 
             if (!events.containsKey(time)) {
-                if (totalNumberOfPeople < MAX_PEOPLE_ARRIVING) {
+                if (time.isBefore(END_TIME)) {
                     totalNumberOfPeople += addNewPersonToWaitingLists(time, peopleWaitingPerFloor, elevator);
-                    if (totalNumberOfPeople == MAX_PEOPLE_ARRIVING) {
-                        shadowElevator.lastPersonArrived();
-                        elevator.lastPersonArrived();
-                    }
                 }
                 time = time.plusSeconds(3);
                 continue;
@@ -116,29 +123,38 @@ public class Building {
                 shadowElevator.stopping();
             }
 
-            if (totalNumberOfPeople < MAX_PEOPLE_ARRIVING) {
+            if (time.isBefore(END_TIME)) {
                 totalNumberOfPeople += addNewPersonToWaitingLists(time, peopleWaitingPerFloor, elevator);
-                if (totalNumberOfPeople == MAX_PEOPLE_ARRIVING) {
-                    shadowElevator.lastPersonArrived();
-                    elevator.lastPersonArrived();
-                }
             }
             time = time.plusSeconds(3);
         }
         peopleWaitingPerFloor.print();
         shadowElevator.printPeople();
         System.out.printf("[%s] Times up\n", time);
-    }
+        System.out.println("People loaded: " + shadowElevator.getCount());
+        System.out.println("Max people loaded: " + shadowElevator.getMaxLoad());
+        Event.durations.forEach(
+                (duration, count) ->
+                        System.out.printf("%2dh %2dmn %2ds -> %d\n", duration.toHoursPart(), duration.toMinutesPart(), duration.toSecondsPart(), count)
+        );
 
-    private static void printInitInfos(WaitingList peopleWaitingPerFloor, int totalNumberOfPeople) {
-        double averageNumberOfPeoplePerMinute = 1d - Math.pow(1d - PROBABILITY_TO_SEE_A_NEW_PERSON_IN_LINE, 20d);
-        System.out.printf("Average number of people in line per minute = %4.2f\n", averageNumberOfPeoplePerMinute);
-        System.out.printf("Number of people waiting = %d\n", totalNumberOfPeople);
-        peopleWaitingPerFloor.print();
+        long numberOfPeople =
+                Event.durations.entrySet().stream().mapToLong(Map.Entry::getValue).sum();
+        Duration maxDuration =
+                Event.durations.entrySet().stream().map(Map.Entry::getKey).max(Comparator.naturalOrder()).orElseThrow();
+        LongSummaryStatistics stats = Event.durations.entrySet().stream()
+                .collect(Collectors.summarizingLong(entry -> entry.getKey().getSeconds() * entry.getValue()));
+        Duration averageDuration = Duration.ofSeconds((long) stats.getAverage());
+
+        System.out.println("Number of people taken = " + numberOfPeople);
+        System.out.printf("Average waiting time = %dmn %ds\n",
+                averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
+        System.out.printf("Max waiting time = %dh %dmn %ds\n",
+                maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
     }
 
     private static int addNewPersonToWaitingLists(LocalTime time, WaitingList peopleWaitingPerFloor, Elevator elevator) {
-        Optional<Map.Entry<Integer, Person>> newPersonWaiting = peopleWaitingPerFloor.addNewPeopleToLists();
+        Optional<Map.Entry<Integer, Person>> newPersonWaiting = peopleWaitingPerFloor.addNewPeopleToLists(time);
         if (newPersonWaiting.isPresent()) {
             int floor = newPersonWaiting.orElseThrow().getKey();
             Person person = newPersonWaiting.orElseThrow().getValue();
