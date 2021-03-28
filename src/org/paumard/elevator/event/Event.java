@@ -1,5 +1,6 @@
 package org.paumard.elevator.event;
 
+import org.paumard.elevator.Building;
 import org.paumard.elevator.Elevator;
 import org.paumard.elevator.model.Person;
 import org.paumard.elevator.system.ShadowElevator;
@@ -112,7 +113,7 @@ public class Event {
         elevator.startsAtFloor(time, currentFloor);
         shadowElevator.startsAtFloor(currentFloor);
 
-        List<Integer> nextFloors = elevator.chooseNextFloors();
+        List<Integer> nextFloors = chooseNextFloors(elevator);
         printElevatorGoingTo(time, currentFloor, nextFloors);
 
         DIRECTION direction = computeDirection(currentFloor, nextFloors);
@@ -147,6 +148,17 @@ public class Event {
         return event;
     }
 
+    private static List<Integer> chooseNextFloors(Elevator elevator) {
+        List<Integer> nextFloors = elevator.chooseNextFloors();
+        if (nextFloors.isEmpty()) {
+            throw new IllegalStateException("The elevator did not chose any next floor");
+        }
+        if (nextFloors.size() > Building.MAX_DISPLAYED_FLOORS) {
+            throw new IllegalStateException("The elevator returned too many next floors: " + nextFloors);
+        }
+        return nextFloors;
+    }
+
     public static Event fromArrivesAtFloor(LocalTime time, Elevator elevator, ShadowElevator shadowElevator) {
         List<Integer> currentFloors = shadowElevator.getNextFloors();
 
@@ -172,7 +184,7 @@ public class Event {
 
         } else {
 
-            List<Integer> nextFloors = elevator.chooseNextFloors();
+            List<Integer> nextFloors = chooseNextFloors(elevator);
             if (nextFloors.isEmpty()) {
                 throw new IllegalStateException("No next floors returned");
             }
@@ -228,7 +240,7 @@ public class Event {
         int currentFloor = shadowElevator.getCurrentFloor();
         elevator.standByAtFloor(currentFloor);
 
-        List<Integer> nextFloors = elevator.chooseNextFloors();
+        List<Integer> nextFloors = chooseNextFloors(elevator);
         printElevatorGoingTo(time, currentFloor, nextFloors);
 
         DIRECTION direction = computeDirection(currentFloor, nextFloors);
@@ -334,7 +346,7 @@ public class Event {
 
         } else {
 
-            List<Integer> nextFloors = elevator.chooseNextFloors();
+            List<Integer> nextFloors = chooseNextFloors(elevator);
             printElevatorGoingTo(time, currentFloor, nextFloors);
 
             DIRECTION direction = computeDirection(currentFloor, nextFloors);
