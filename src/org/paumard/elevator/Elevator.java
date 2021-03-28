@@ -11,15 +11,19 @@ public interface Elevator {
 
     void peopleWaiting(List<List<Person>> peopleByFloor);
 
-    int chooseNextFloor();
+    List<Integer> chooseNextFloors();
 
     void arriveAtFloor(int floor);
 
-    void loadPerson(Person person);
+    void loadPeople(List<Person> person);
 
-    void unloadPerson(Person person);
+    void unload(List<Person> person);
 
     void newPersonWaitingAtFloor(int floor, Person person);
 
     void lastPersonArrived();
+
+    void timeIs(LocalTime time);
+
+    void standByAtFloor(int currentFloor);
 }

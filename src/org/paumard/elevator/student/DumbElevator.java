@@ -7,11 +7,10 @@ import java.time.LocalTime;
 import java.util.List;
 
 public class DumbElevator implements Elevator {
+    private static int[] floors = {2, 3};
+    private static int round = 0;
 
-    private int elevatorCapacity;
-
-    public DumbElevator(int elevatorCapacity) {
-        this.elevatorCapacity = elevatorCapacity;
+    public DumbElevator(int capacity) {
     }
 
     @Override
@@ -20,11 +19,12 @@ public class DumbElevator implements Elevator {
 
     @Override
     public void peopleWaiting(List<List<Person>> peopleByFloor) {
+
     }
 
     @Override
-    public int chooseNextFloor() {
-        return 1;
+    public List<Integer> chooseNextFloors() {
+        return List.of(floors[round++]);
     }
 
     @Override
@@ -32,11 +32,11 @@ public class DumbElevator implements Elevator {
     }
 
     @Override
-    public void loadPerson(Person person) {
+    public void loadPeople(List<Person> person) {
     }
 
     @Override
-    public void unloadPerson(Person person) {
+    public void unload(List<Person> person) {
     }
 
     @Override
@@ -45,5 +45,13 @@ public class DumbElevator implements Elevator {
 
     @Override
     public void lastPersonArrived() {
+    }
+
+    @Override
+    public void timeIs(LocalTime time) {
+    }
+
+    @Override
+    public void standByAtFloor(int currentFloor) {
     }
 }
