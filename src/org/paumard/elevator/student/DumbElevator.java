@@ -1,14 +1,16 @@
 package org.paumard.elevator.student;
 
+import org.paumard.elevator.Building;
 import org.paumard.elevator.Elevator;
+import org.paumard.elevator.event.DIRECTION;
 import org.paumard.elevator.model.Person;
 
 import java.time.LocalTime;
 import java.util.List;
 
 public class DumbElevator implements Elevator {
-    private static int[] floors = {2, 3};
-    private static int round = 0;
+    private DIRECTION direction = DIRECTION.UP;
+    private int currentFloor = 1;
 
     public DumbElevator(int capacity) {
     }
@@ -24,7 +26,22 @@ public class DumbElevator implements Elevator {
 
     @Override
     public List<Integer> chooseNextFloors() {
-        return List.of(floors[round++]);
+        if (direction == DIRECTION.UP) {
+            if (currentFloor < Building.MAX_FLOOR) {
+                currentFloor++;
+            } else {
+                this.direction = DIRECTION.DOWN;
+                currentFloor--;
+            }
+        } else {
+            if (currentFloor > 1) {
+                currentFloor--;
+            } else {
+                this.direction = DIRECTION.UP;
+                currentFloor++;
+            }
+        }
+        return List.of(currentFloor);
     }
 
     @Override

@@ -3,7 +3,7 @@ package org.paumard.elevator;
 import org.paumard.elevator.event.Event;
 import org.paumard.elevator.model.Person;
 import org.paumard.elevator.model.WaitingList;
-import org.paumard.elevator.student.JoseElevator;
+import org.paumard.elevator.student.DumbElevator;
 import org.paumard.elevator.system.ShadowElevator;
 
 import java.io.FileNotFoundException;
@@ -37,7 +37,7 @@ public class Building {
         events.put(time, startEvent);
 
         WaitingList peopleWaitingPerFloor = new WaitingList();
-        Elevator elevator = new JoseElevator(ELEVATOR_CAPACITY);
+        Elevator elevator = new DumbElevator(ELEVATOR_CAPACITY);
 
 
         int totalNumberOfPeople = peopleWaitingPerFloor.countPeople();
@@ -163,6 +163,8 @@ public class Building {
                 averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
         PRINTER.printf("Max waiting time = %dh %dmn %ds\n",
                 maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
+        PRINTER.println("People left in elevator = " + shadowElevator.numberOfPeopleInElevator());
+        PRINTER.println("People left in floors = " + peopleWaitingPerFloor.countPeople());
 
         System.out.println("Day is finished");
     }

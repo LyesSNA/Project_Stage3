@@ -137,4 +137,8 @@ public class ShadowElevator {
     public int getMaxLoad() {
         return this.maxLoad;
     }
+
+    public int numberOfPeopleInElevator() {
+        return this.people.size();
+    }
 }
