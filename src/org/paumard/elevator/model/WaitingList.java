@@ -11,7 +11,6 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.paumard.elevator.Building.*;
@@ -20,7 +19,6 @@ public class WaitingList {
 
     public static final double PROBABLITY_TO_CALL_FROM_1 = 0.8d;
     private static final double PROBABLITY_NOT_TO_CALL_FROM_1 = 0.9d;
-    private static Random random = new Random(10L);
     private static List<String> names = new ArrayList<>();
     private static NavigableMap<LocalTime, Double> affluence;
     private static BinaryOperator<Double> unused = (d1, d2) -> d1;
@@ -135,7 +133,7 @@ public class WaitingList {
     public Optional<Map.Entry<Integer, Person>> addNewPeopleToLists(LocalTime time) {
 
         LocalTime key = affluence.floorKey(time);
-        double probabilityToAddAPerson = affluence.get(key)/3d;
+        double probabilityToAddAPerson = affluence.get(key) / 3d;
         if (random.nextFloat() < probabilityToAddAPerson) {
             int indexFloor = -1;
             if (time.isBefore(LocalTime.of(10, 30, 0))) {
