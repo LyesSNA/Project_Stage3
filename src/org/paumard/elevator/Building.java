@@ -3,9 +3,11 @@ package org.paumard.elevator;
 import org.paumard.elevator.event.Event;
 import org.paumard.elevator.model.Person;
 import org.paumard.elevator.model.WaitingList;
-import org.paumard.elevator.student.DumbElevator;
+import org.paumard.elevator.student.JoseElevator;
 import org.paumard.elevator.system.ShadowElevator;
 
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
@@ -13,15 +15,20 @@ import java.util.stream.Collectors;
 
 public class Building {
 
+    public static PrintStream PRINTER;
+    public static final boolean DISPLAY_PRECISE_STATS = false;
     public static final int ELEVATOR_CAPACITY = 15;
     public static final int ELEVATOR_LOADING_CAPACITY = 3;
-    public static final int MAX_DISPLAYED_FLOORS = 5;
+    public static final int MAX_DISPLAYED_FLOORS = 10;
     public static final int MAX_FLOOR = 10;
     public static final LocalTime START_TIME = LocalTime.of(6, 0, 0);
-    public static final LocalTime END_TIME = LocalTime.of(8, 30, 0);
-    public static final LocalTime END_OF_DAY = LocalTime.of(9, 30, 0);
+    public static final LocalTime END_TIME = LocalTime.of(22, 30, 0);
+    public static final LocalTime END_OF_DAY = END_TIME.plusHours(1);
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
+
+        // PRINTER = System.out;
+        PRINTER = new PrintStream("logs/debug.log");
 
         NavigableMap<LocalTime, Event> events = new TreeMap<>();
 
@@ -30,7 +37,7 @@ public class Building {
         events.put(time, startEvent);
 
         WaitingList peopleWaitingPerFloor = new WaitingList();
-        Elevator elevator = new DumbElevator(ELEVATOR_CAPACITY);
+        Elevator elevator = new JoseElevator(ELEVATOR_CAPACITY);
 
 
         int totalNumberOfPeople = peopleWaitingPerFloor.countPeople();
@@ -39,12 +46,16 @@ public class Building {
 
         peopleWaitingPerFloor.print();
 
+        PRINTER.println("Start time = " + START_TIME);
+        PRINTER.println("End time = " + END_TIME);
+        PRINTER.println("End of day = " + END_OF_DAY);
+
         while (!shadowElevator.isStopped() && time.isBefore(END_OF_DAY)) {
 
             elevator.timeIs(time);
 
             if (time.equals(END_TIME)) {
-                System.out.printf("\n[%s]No more people are coming.\n", time.toString());
+                PRINTER.printf("\n[%s]No more people are coming.\n", time.toString());
                 shadowElevator.lastPersonArrived();
                 elevator.lastPersonArrived();
             }
@@ -129,27 +140,31 @@ public class Building {
         }
         peopleWaitingPerFloor.print();
         shadowElevator.printPeople();
-        System.out.printf("[%s] Times up\n", time);
-        System.out.println("People loaded: " + shadowElevator.getCount());
-        System.out.println("Max people loaded: " + shadowElevator.getMaxLoad());
-        Event.durations.forEach(
-                (duration, count) ->
-                        System.out.printf("%2dh %2dmn %2ds -> %d\n", duration.toHoursPart(), duration.toMinutesPart(), duration.toSecondsPart(), count)
-        );
+        PRINTER.printf("[%s] Times up\n", time);
+        PRINTER.println("People loaded: " + shadowElevator.getCount());
+        PRINTER.println("Max people loaded: " + shadowElevator.getMaxLoad());
+        if (DISPLAY_PRECISE_STATS) {
+            Event.durations.forEach(
+                    (duration, count) ->
+                            PRINTER.printf("%2dh %2dmn %2ds -> %d\n", duration.toHoursPart(), duration.toMinutesPart(), duration.toSecondsPart(), count)
+            );
+        }
 
         long numberOfPeople =
-                Event.durations.entrySet().stream().mapToLong(Map.Entry::getValue).sum();
+                Event.durations.values().stream().mapToLong(l -> l).sum();
         Duration maxDuration =
-                Event.durations.entrySet().stream().map(Map.Entry::getKey).max(Comparator.naturalOrder()).orElseThrow();
+                Event.durations.keySet().stream().max(Comparator.naturalOrder()).orElseThrow();
         LongSummaryStatistics stats = Event.durations.entrySet().stream()
                 .collect(Collectors.summarizingLong(entry -> entry.getKey().getSeconds() * entry.getValue()));
         Duration averageDuration = Duration.ofSeconds((long) stats.getAverage());
 
-        System.out.println("Number of people taken = " + numberOfPeople);
-        System.out.printf("Average waiting time = %dmn %ds\n",
+        PRINTER.println("Number of people taken = " + numberOfPeople);
+        PRINTER.printf("Average waiting time = %dmn %ds\n",
                 averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
-        System.out.printf("Max waiting time = %dh %dmn %ds\n",
+        PRINTER.printf("Max waiting time = %dh %dmn %ds\n",
                 maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
+
+        System.out.println("Day is finished");
     }
 
     private static int addNewPersonToWaitingLists(LocalTime time, WaitingList peopleWaitingPerFloor, Elevator elevator) {
@@ -158,8 +173,8 @@ public class Building {
             int floor = newPersonWaiting.orElseThrow().getKey();
             Person person = newPersonWaiting.orElseThrow().getValue();
             elevator.newPersonWaitingAtFloor(floor, person);
-            System.out.printf("\n[%s] %s calls the elevator from floor %d to go to floor %d\n", time, person.getName(), floor, person.getDestinationFloor());
-            System.out.printf("Waiting list is now:\n");
+            PRINTER.printf("\n[%s] %s calls the elevator from floor %d to go to floor %d\n", time, person.getName(), floor, person.getDestinationFloor());
+            PRINTER.printf("Waiting list is now:\n");
             peopleWaitingPerFloor.print();
             return 1;
         } else {

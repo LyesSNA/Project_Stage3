@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.paumard.elevator.Building.ELEVATOR_LOADING_CAPACITY;
+import static org.paumard.elevator.Building.PRINTER;
 
 public class ShadowElevator {
 
@@ -33,7 +34,7 @@ public class ShadowElevator {
         Duration totalDuration = Duration.between(Building.START_TIME, time);
         int s = totalDuration.toSecondsPart();
         int mn = totalDuration.toMinutesPart();
-        System.out.printf("Total duration = %dmn %ds\n", mn, s);
+        PRINTER.printf("Total duration = %dmn %ds\n", mn, s);
     }
 
     public int getCurrentFloor() {
@@ -57,10 +58,10 @@ public class ShadowElevator {
 
     public void printPeople() {
         if (people.isEmpty()) {
-            System.out.printf("Elevator stopped at floor %d No one left in the elevator\n", this.currentFloor);
+            PRINTER.printf("Elevator stopped at floor %d No one left in the elevator\n", this.currentFloor);
         } else {
-            System.out.printf("Elevator stopped at floor %d with the following people\n", this.currentFloor);
-            people.forEach(p -> System.out.println("\t" + p));
+            PRINTER.printf("Elevator stopped at floor %d with the following people\n", this.currentFloor);
+            people.forEach(p -> PRINTER.println("\t" + p));
         }
     }
 

@@ -10,9 +10,9 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import static org.paumard.elevator.Building.ELEVATOR_LOADING_CAPACITY;
+import static org.paumard.elevator.Building.PRINTER;
 
 public class Event {
 
@@ -108,7 +108,7 @@ public class Event {
     public static Event fromElevatorStart(LocalTime time, Elevator elevator, ShadowElevator shadowElevator) {
         Event event;
         int currentFloor = 1;
-        System.out.printf("\n[%s] Starting at floor %d\n", time, currentFloor);
+        PRINTER.printf("\n[%s] Starting at floor %d\n", time, currentFloor);
 
         elevator.startsAtFloor(time, currentFloor);
         shadowElevator.startsAtFloor(currentFloor);
@@ -124,15 +124,15 @@ public class Event {
         if (direction == DIRECTION.STOP) {
             if (shadowElevator.hasLastPersonArrived()) {
                 shadowElevator.stopping();
-                System.out.printf("\n[%s] Stopping at floor %d\n", time, currentFloor);
+                PRINTER.printf("\n[%s] Stopping at floor %d\n", time, currentFloor);
                 return new StoppingAtFloor(currentFloor);
             } else {
-                System.out.printf("\n[%s] Standby at floor %d\n", time, currentFloor);
+                PRINTER.printf("\n[%s] Standby at floor %d\n", time, currentFloor);
                 return new StandByAtFloor();
             }
         }
 
-        System.out.printf("[%s] Going %s to floor %d from floor %d\n", time, direction, nextFloor, currentFloor);
+        PRINTER.printf("[%s] Going %s to floor %d from floor %d\n", time, direction, nextFloor, currentFloor);
 
         List<Person> nextPeopleToLoad = shadowElevator.getNextPeopleToLoad(nextFloors, currentFloor);
         if (!nextPeopleToLoad.isEmpty()) {
@@ -142,7 +142,7 @@ public class Event {
         } else {
 
             Duration duration = computeDuration(currentFloor, nextFloor);
-            System.out.printf("\n[%s] Going %s to floor %d, arrival in %ds\n", time, direction, nextFloor, duration.getSeconds());
+            PRINTER.printf("\n[%s] Going %s to floor %d, arrival in %ds\n", time, direction, nextFloor, duration.getSeconds());
             event = new ArriveAtFloor(duration, nextFloor);
         }
         return event;
@@ -166,7 +166,7 @@ public class Event {
         elevator.arriveAtFloor(currentFloor);
         shadowElevator.moveTo(currentFloor);
 
-        System.out.printf("\n[%s] Arrived at floor %d\n", time, currentFloor);
+        PRINTER.printf("\n[%s] Arrived at floor %d\n", time, currentFloor);
 
         return new DoorOpening();
     }
@@ -175,7 +175,7 @@ public class Event {
 
         int currentFloor = shadowElevator.getCurrentFloor();
 
-        System.out.printf("[%s] Door opened at floor %d\n", time, currentFloor);
+        PRINTER.printf("[%s] Door opened at floor %d\n", time, currentFloor);
 
         List<Person> nextPersonToUnload = shadowElevator.getNextPeopleToUnload(currentFloor);
         if (!nextPersonToUnload.isEmpty()) {
@@ -197,15 +197,15 @@ public class Event {
             if (direction == DIRECTION.STOP) {
                 if (shadowElevator.hasLastPersonArrived()) {
                     shadowElevator.stopping();
-                    System.out.printf("\n[%s] Stopping at floor %d\n", time, currentFloor);
+                    PRINTER.printf("\n[%s] Stopping at floor %d\n", time, currentFloor);
                     return new StoppingAtFloor(currentFloor);
                 } else {
-                    System.out.printf("\n[%s] Standby at floor %d\n", time, currentFloor);
+                    PRINTER.printf("\n[%s] Standby at floor %d\n", time, currentFloor);
                     return new StandByAtFloor();
                 }
             }
 
-            System.out.printf("[%s] Going %s to floor %d from floor %d\n", time, direction, nextFloor, currentFloor);
+            PRINTER.printf("[%s] Going %s to floor %d from floor %d\n", time, direction, nextFloor, currentFloor);
 
             List<Person> nextPersonToLoad = shadowElevator.getNextPeopleToLoad(nextFloors, currentFloor);
             if (!nextPersonToLoad.isEmpty()) {
@@ -216,7 +216,7 @@ public class Event {
             } else {
 
                 Duration duration = computeDuration(currentFloor, nextFloor);
-                System.out.printf("\n[%s] Going %s to floor %d, arrival in %ds\n", time, direction, nextFloor, duration.getSeconds());
+                PRINTER.printf("\n[%s] Going %s to floor %d, arrival in %ds\n", time, direction, nextFloor, duration.getSeconds());
 
                 return new DoorClosing(currentFloor, nextFloor);
             }
@@ -228,7 +228,7 @@ public class Event {
         List<Integer> nextFloors = shadowElevator.getNextFloors();
         int nextFloor = nextFloors.get(0);
 
-        System.out.printf("[%s] Door closed at floor %d, going to floor %d\n",
+        PRINTER.printf("[%s] Door closed at floor %d, going to floor %d\n",
                 time, currentFloor, nextFloor);
 
         Duration duration = computeDuration(currentFloor, nextFloor);
@@ -271,7 +271,7 @@ public class Event {
         }
 
         if (shadowElevator.hasLastPersonArrived()) {
-            System.out.printf("\n[%s] Stopping at floor %d\n", time, currentFloor);
+            PRINTER.printf("\n[%s] Stopping at floor %d\n", time, currentFloor);
             return new StoppingAtFloor(currentFloor);
         } else {
             return new StandByAtFloor();
@@ -280,7 +280,7 @@ public class Event {
 
     private static void printElevatorGoingTo(LocalTime time, int currentFloor, List<Integer> nextFloors) {
         if (nextFloors.get(0) != currentFloor) {
-            System.out.printf("[%s] Elevator decides to go to floor %s\n", time, nextFloors.toString());
+            PRINTER.printf("[%s] Elevator decides to go to floor %s\n", time, nextFloors.toString());
         }
     }
 
@@ -312,7 +312,7 @@ public class Event {
         List<Integer> nextFloors = shadowElevator.getNextFloors();
 
         for (Person person : people) {
-            System.out.printf("[%s] Person loaded [%s] at floor %d\n", time, person.toString(), currentFloor);
+            PRINTER.printf("[%s] Person loaded [%s] at floor %d\n", time, person.toString(), currentFloor);
         }
 
         List<Person> nextPeopleToLoad = shadowElevator.getNextPeopleToLoad(nextFloors, currentFloor);
@@ -336,7 +336,7 @@ public class Event {
             Duration waitDuration = Duration.between(person.getArrivalTime(), time);
             durations.merge(waitDuration, 1L, Long::sum);
 
-            System.out.printf("[%s] Person unloaded [%s] at floor %d\n", time, person.toString(), currentFloor);
+            PRINTER.printf("[%s] Person unloaded [%s] at floor %d\n", time, person.toString(), currentFloor);
         }
 
         List<Person> nextPeopleToUnload = shadowElevator.getNextPeopleToUnload(currentFloor);
@@ -356,10 +356,10 @@ public class Event {
             if (direction == DIRECTION.STOP) {
                 if (shadowElevator.hasLastPersonArrived()) {
                     shadowElevator.stopping();
-                    System.out.printf("\n[%s] Stopping at floor %d\n", time, currentFloor);
+                    PRINTER.printf("\n[%s] Stopping at floor %d\n", time, currentFloor);
                     return new StoppingAtFloor(currentFloor);
                 } else {
-                    System.out.printf("\n[%s] Standing by at floor %d\n", time, currentFloor);
+                    PRINTER.printf("\n[%s] Standing by at floor %d\n", time, currentFloor);
                     return new StandByAtFloor();
                 }
             }
@@ -372,7 +372,7 @@ public class Event {
             } else {
 
                 Duration duration = computeDuration(currentFloor, nextFloor);
-                System.out.printf("[%s] Going %s to floor %d, arrival in %ds\n", time, direction, nextFloor, duration.getSeconds());
+                PRINTER.printf("[%s] Going %s to floor %d, arrival in %ds\n", time, direction, nextFloor, duration.getSeconds());
 
                 return new ArriveAtFloor(duration, nextFloor);
             }

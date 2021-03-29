@@ -14,8 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.paumard.elevator.Building.MAX_FLOOR;
-import static org.paumard.elevator.Building.START_TIME;
+import static org.paumard.elevator.Building.*;
 
 public class WaitingList {
 
@@ -119,11 +118,11 @@ public class WaitingList {
     public void print() {
         for (int index = 0; index < peopleWaitingPerFloor.size(); index++) {
             int floor = index + 1;
-            System.out.println("People waiting on floor " + floor);
+            PRINTER.println("People waiting on floor " + floor);
             if (peopleWaitingPerFloor.get(index).isEmpty()) {
-                System.out.println("\tNo one");
+                PRINTER.println("\tNo one");
             } else {
-                peopleWaitingPerFloor.get(index).forEach(p -> System.out.println("\t" + p));
+                peopleWaitingPerFloor.get(index).forEach(p -> PRINTER.println("\t" + p));
             }
         }
     }
@@ -143,20 +142,20 @@ public class WaitingList {
                 if (random.nextFloat() < PROBABLITY_TO_CALL_FROM_1) {
                     indexFloor = 0;
                 } else {
-                    indexFloor = random.nextInt(Building.MAX_FLOOR);
+                    indexFloor = random.nextInt(Building.MAX_FLOOR - 1) + 1;
                 }
             } else if (time.isAfter(LocalTime.of(16, 30, 0))) {
                 if (random.nextFloat() < PROBABLITY_NOT_TO_CALL_FROM_1) {
                     indexFloor = random.nextInt(Building.MAX_FLOOR - 1) + 1;
                 } else {
-                    indexFloor = random.nextInt(Building.MAX_FLOOR);
+                    indexFloor = 0;
                 }
             } else {
                 indexFloor = random.nextInt(Building.MAX_FLOOR);
             }
 
             int indexDestinationFloor = -1;
-            if (time.isAfter(LocalTime.of(16, 30, 0)) && indexFloor != 1) {
+            if (time.isAfter(LocalTime.of(16, 30, 0)) && indexFloor != 0) {
                 if (random.nextFloat() < PROBABLITY_NOT_TO_CALL_FROM_1) {
                     indexDestinationFloor = 0;
                 } else {
