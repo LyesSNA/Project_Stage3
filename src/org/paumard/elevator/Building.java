@@ -3,7 +3,7 @@ package org.paumard.elevator;
 import org.paumard.elevator.event.Event;
 import org.paumard.elevator.model.Person;
 import org.paumard.elevator.model.WaitingList;
-import org.paumard.elevator.student.DumbElevator;
+import org.paumard.elevator.student.DumbElevatorForVIP;
 import org.paumard.elevator.system.ShadowElevator;
 
 import java.io.FileNotFoundException;
@@ -21,7 +21,8 @@ public class Building {
     public static final int MAX_DISPLAYED_FLOORS = 10;
     public static final int MAX_FLOOR = 10;
     public static final LocalTime START_TIME = LocalTime.of(6, 0, 0);
-    public static final LocalTime END_TIME = LocalTime.of(22, 30, 0);
+    // You can pay with this time to work on the elevator
+    public static final LocalTime END_TIME = LocalTime.of(6, 15, 0);
     public static final LocalTime END_OF_DAY = END_TIME.plusHours(1);
     public static Random random = new Random(10L); // 10L
     private static LocalTime time = START_TIME;
@@ -40,7 +41,7 @@ public class Building {
         events.put(time, startEvent);
 
         WaitingList peopleWaitingPerFloor = new WaitingList();
-        Elevator elevator = new DumbElevator(ELEVATOR_CAPACITY);
+        Elevator elevator = new DumbElevatorForVIP(ELEVATOR_CAPACITY);
 
 
         int totalNumberOfPeople = peopleWaitingPerFloor.countPeople();
@@ -154,21 +155,25 @@ public class Building {
 
         long numberOfPeople =
                 Event.durations.values().stream().mapToLong(l -> l).sum();
-        Duration maxDuration =
-                Event.durations.keySet().stream().max(Comparator.naturalOrder()).orElseThrow();
-        LongSummaryStatistics stats = Event.durations.entrySet().stream()
-                .collect(Collectors.summarizingLong(entry -> entry.getKey().getSeconds() * entry.getValue()));
-        Duration averageDuration = Duration.ofSeconds((long) stats.getAverage());
+        Optional<Duration> max = 
+        		Event.durations.keySet().stream().max(Comparator.naturalOrder());
+        if (max.isPresent()) {
+			Duration maxDuration = max.orElseThrow();
+	        LongSummaryStatistics stats = Event.durations.entrySet().stream()
+	                .collect(Collectors.summarizingLong(entry -> entry.getKey().getSeconds() * entry.getValue()));
+	        Duration averageDuration = Duration.ofSeconds((long) stats.getAverage());
+	
+	        printers.forEach(printer -> {
+	            printer.println("Number of people taken = " + numberOfPeople);
+	            printer.printf("Average waiting time = %dmn %ds\n",
+	                    averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
+	            printer.printf("Max waiting time = %dh %dmn %ds\n",
+	                    maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
+	            printer.println("People left in elevator = " + shadowElevator.numberOfPeopleInElevator());
+	            printer.println("People left in floors = " + peopleWaitingPerFloor.countPeople());
 
-        printers.forEach(printer -> {
-            printer.println("Number of people taken = " + numberOfPeople);
-            printer.printf("Average waiting time = %dmn %ds\n",
-                    averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
-            printer.printf("Max waiting time = %dh %dmn %ds\n",
-                    maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
-            printer.println("People left in elevator = " + shadowElevator.numberOfPeopleInElevator());
-            printer.println("People left in floors = " + peopleWaitingPerFloor.countPeople());
-        });
+	        });
+        }
 
         System.out.println("Day is finished");
     }
