@@ -4,6 +4,7 @@ import org.paumard.elevator.event.Event;
 import org.paumard.elevator.model.Person;
 import org.paumard.elevator.model.WaitingList;
 import org.paumard.elevator.student.DumbElevator;
+import org.paumard.elevator.student.DumbElevatorForVIP;
 import org.paumard.elevator.system.ShadowElevator;
 
 import java.io.FileNotFoundException;
@@ -40,7 +41,7 @@ public class Building {
         events.put(time, startEvent);
 
         WaitingList peopleWaitingPerFloor = new WaitingList();
-        Elevator elevator = new DumbElevator(ELEVATOR_CAPACITY);
+        Elevator elevator = new DumbElevatorForVIP(ELEVATOR_CAPACITY);
 
 
         int totalNumberOfPeople = peopleWaitingPerFloor.countPeople();
@@ -156,9 +157,9 @@ public class Building {
                 Event.durations.values().stream().mapToLong(l -> l).sum();
         Duration maxDuration =
                 Event.durations.keySet().stream().max(Comparator.naturalOrder()).orElseThrow();
-        LongSummaryStatistics stats = Event.durations.entrySet().stream()
-                .collect(Collectors.summarizingLong(entry -> entry.getKey().getSeconds() * entry.getValue()));
-        Duration averageDuration = Duration.ofSeconds((long) stats.getAverage());
+        long sum =
+                Event.durations.entrySet().stream().mapToLong(entry -> entry.getKey().getSeconds() * entry.getValue()).sum();
+        Duration averageDuration = Duration.ofSeconds(sum / numberOfPeople);
 
         printers.forEach(printer -> {
             printer.println("Number of people taken = " + numberOfPeople);
@@ -198,16 +199,13 @@ public class Building {
         durations.put(Duration.ofMinutes(30), 0L);
         durations.put(Duration.ofHours(1), 0L);
 
-        Event.durations.forEach(
-                (duration, count) -> {
-                    for (Duration keyDuration : durations.descendingKeySet()) {
-                        if (duration.compareTo(keyDuration) > 0) {
-                            durations.merge(keyDuration, 1L, Long::sum);
-                            continue;
-                        }
-                    }
-                }
-        );
+        for (Map.Entry<Duration, Long> entry : Event.durations.entrySet()) {
+            Duration duration = entry.getKey();
+            Duration bucket = durations.descendingKeySet().stream()
+                    .filter(keyDuration -> duration.compareTo(keyDuration) > 0)
+                    .findFirst().orElseThrow();
+            durations.merge(bucket, entry.getValue(), Long::sum);
+        }
 
         durations.forEach(
                 (duration, count) ->
