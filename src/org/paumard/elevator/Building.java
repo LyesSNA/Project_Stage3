@@ -11,7 +11,6 @@ import java.io.PrintStream;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Building {
 
@@ -155,25 +154,21 @@ public class Building {
 
         long numberOfPeople =
                 Event.durations.values().stream().mapToLong(l -> l).sum();
-        Optional<Duration> max = 
-        		Event.durations.keySet().stream().max(Comparator.naturalOrder());
-        if (max.isPresent()) {
-			Duration maxDuration = max.orElseThrow();
-	        LongSummaryStatistics stats = Event.durations.entrySet().stream()
-	                .collect(Collectors.summarizingLong(entry -> entry.getKey().getSeconds() * entry.getValue()));
-	        Duration averageDuration = Duration.ofSeconds((long) stats.getAverage());
-	
-	        printers.forEach(printer -> {
-	            printer.println("Number of people taken = " + numberOfPeople);
-	            printer.printf("Average waiting time = %dmn %ds\n",
-	                    averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
-	            printer.printf("Max waiting time = %dh %dmn %ds\n",
-	                    maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
-	            printer.println("People left in elevator = " + shadowElevator.numberOfPeopleInElevator());
-	            printer.println("People left in floors = " + peopleWaitingPerFloor.countPeople());
+        Duration maxDuration =
+                Event.durations.keySet().stream().max(Comparator.naturalOrder()).orElseThrow();
+        long sum =
+                Event.durations.entrySet().stream().mapToLong(entry -> entry.getKey().getSeconds() * entry.getValue()).sum();
+        Duration averageDuration = Duration.ofSeconds(sum / numberOfPeople);
 
-	        });
-        }
+        printers.forEach(printer -> {
+            printer.println("Number of people taken = " + numberOfPeople);
+            printer.printf("Average waiting time = %dmn %ds\n",
+                    averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
+            printer.printf("Max waiting time = %dh %dmn %ds\n",
+                    maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
+            printer.println("People left in elevator = " + shadowElevator.numberOfPeopleInElevator());
+            printer.println("People left in floors = " + peopleWaitingPerFloor.countPeople());
+        });
 
         System.out.println("Day is finished");
     }
@@ -203,16 +198,13 @@ public class Building {
         durations.put(Duration.ofMinutes(30), 0L);
         durations.put(Duration.ofHours(1), 0L);
 
-        Event.durations.forEach(
-                (duration, count) -> {
-                    for (Duration keyDuration : durations.descendingKeySet()) {
-                        if (duration.compareTo(keyDuration) > 0) {
-                            durations.merge(keyDuration, 1L, Long::sum);
-                            continue;
-                        }
-                    }
-                }
-        );
+        for (Map.Entry<Duration, Long> entry : Event.durations.entrySet()) {
+            Duration duration = entry.getKey();
+            Duration bucket = durations.descendingKeySet().stream()
+                    .filter(keyDuration -> duration.compareTo(keyDuration) > 0)
+                    .findFirst().orElseThrow();
+            durations.merge(bucket, entry.getValue(), Long::sum);
+        }
 
         durations.forEach(
                 (duration, count) ->
