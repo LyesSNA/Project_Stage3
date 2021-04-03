@@ -153,21 +153,24 @@ public class Building {
 
         long numberOfPeople =
                 Event.durations.values().stream().mapToLong(l -> l).sum();
-        Duration maxDuration =
-                Event.durations.keySet().stream().max(Comparator.naturalOrder()).orElseThrow();
-        long sum =
-                Event.durations.entrySet().stream().mapToLong(entry -> entry.getKey().getSeconds() * entry.getValue()).sum();
-        Duration averageDuration = Duration.ofSeconds(sum / numberOfPeople);
+        Optional<Duration> maxDurationOpt =
+                Event.durations.keySet().stream().max(Comparator.naturalOrder());
+        if (maxDurationOpt.isPresent()) {
+            Duration maxDuration = maxDurationOpt.orElseThrow();
+            long sum =
+                    Event.durations.entrySet().stream().mapToLong(entry -> entry.getKey().getSeconds() * entry.getValue()).sum();
+            Duration averageDuration = Duration.ofSeconds(sum / numberOfPeople);
 
-        printers.forEach(printer -> {
-            printer.println("Number of people taken = " + numberOfPeople);
-            printer.printf("Average waiting time = %dmn %ds\n",
-                    averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
-            printer.printf("Max waiting time = %dh %dmn %ds\n",
-                    maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
-            printer.println("People left in elevator = " + shadowElevator.numberOfPeopleInElevator());
-            printer.println("People left in floors = " + peopleWaitingPerFloor.countPeople());
-        });
+            printers.forEach(printer -> {
+                printer.println("Number of people taken = " + numberOfPeople);
+                printer.printf("Average waiting time = %dmn %ds\n",
+                        averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
+                printer.printf("Max waiting time = %dh %dmn %ds\n",
+                        maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
+                printer.println("People left in elevator = " + shadowElevator.numberOfPeopleInElevator());
+                printer.println("People left in floors = " + peopleWaitingPerFloor.countPeople());
+            });
+        }
 
         System.out.println("Day is finished");
     }
