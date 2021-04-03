@@ -27,7 +27,7 @@ public class Building {
     public static final LocalTime END_TIME = LocalTime.of(22, 30, 0);
     public static final LocalTime END_OF_DAY = END_TIME.plusHours(1);
     public static Random random = new Random(10L); // 10L
-    private static LocalTime time = START_TIME;
+    public static LocalTime time = START_TIME;
 
     public static void main(String[] args) throws FileNotFoundException {
 
@@ -37,8 +37,6 @@ public class Building {
         Set<PrintStream> printers = new HashSet<>(List.of(PRINTER, System.out));
 
         NavigableMap<LocalTime, List<Event>> events = new TreeMap<>();
-
-        LocalTime time = START_TIME;
 
         WaitingList waitingList = WaitingList.getInstance();
         int totalNumberOfPeople = waitingList.countPeople();
