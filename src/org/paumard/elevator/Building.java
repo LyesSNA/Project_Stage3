@@ -1,16 +1,19 @@
 package org.paumard.elevator;
 
+import org.paumard.elevator.event.DIRECTION;
 import org.paumard.elevator.event.Event;
 import org.paumard.elevator.model.Person;
 import org.paumard.elevator.model.WaitingList;
 import org.paumard.elevator.student.DumbElevator;
 import org.paumard.elevator.system.ShadowElevator;
 
-import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class Building {
 
@@ -25,168 +28,390 @@ public class Building {
     public static Random random = new Random(10L); // 10L
     private static LocalTime time = START_TIME;
 
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) {
 
-        // PRINTER = System.out;
-        PRINTER = new PrintStream("logs/debug.log");
+        NavigableMap<LocalTime, List<Event>> events = new TreeMap<>();
 
-        Set<PrintStream> printers = new HashSet<>(List.of(PRINTER, System.out));
+        LocalTime time = START_TIME;
 
-        NavigableMap<LocalTime, Event> events = new TreeMap<>();
+        WaitingList waitingList = WaitingList.getInstance();
+        int totalNumberOfPeople = waitingList.countPeople();
 
+        Elevator elevator1 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 1");
+        Elevator elevator2 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 2");
+        Elevators elevators = new Elevators(List.of(elevator1));
 
-        Event startEvent = new Event(Event.ELEVATOR_STARTS);
-        events.put(time, startEvent);
+        List<Event> startEvents = Event.createStartEventFor(elevators);
+        events.put(time, startEvents);
 
-        WaitingList peopleWaitingPerFloor = new WaitingList();
-        Elevator elevator = new DumbElevator(ELEVATOR_CAPACITY);
+        elevators.peopleWaiting(waitingList);
 
+        Map<String, ShadowElevator> shadowElevatorsRegistry = elevators.getElevators().stream()
+                .collect(Collectors.toMap(
+                        Elevator::getId,
+                        elevator -> new ShadowElevator(ELEVATOR_CAPACITY, elevator.getId(), waitingList)
+                ));
 
-        int totalNumberOfPeople = peopleWaitingPerFloor.countPeople();
-        elevator.peopleWaiting(peopleWaitingPerFloor.getLists());
-        ShadowElevator shadowElevator = new ShadowElevator(ELEVATOR_CAPACITY, peopleWaitingPerFloor);
+        ShadowElevators shadowElevators = new ShadowElevators(shadowElevatorsRegistry);
 
-        peopleWaitingPerFloor.print();
+        waitingList.print();
 
-        printers.forEach(printer -> {
-            printer.println("Start time = " + START_TIME);
-            printer.println("End time = " + END_TIME);
-            printer.println("End of day = " + END_OF_DAY);
-        });
+        while (shadowElevators.areStillRunning() && time.isBefore(END_OF_DAY)) {
 
-        while (!shadowElevator.isStopped() && time.isBefore(END_OF_DAY)) {
-
-            elevator.timeIs(time);
+            elevators.timeIs(time);
 
             if (time.equals(END_TIME)) {
-                PRINTER.printf("\n[%s]No more people are coming.\n", time.toString());
-                shadowElevator.lastPersonArrived();
-                elevator.lastPersonArrived();
+                System.out.printf("\n[%s]No more people are coming.\n", time.toString());
+                shadowElevators.lastPersonArrived();
+                elevators.lastPersonArrived();
             }
 
             if (!events.containsKey(time)) {
                 if (time.isBefore(END_TIME)) {
-                    totalNumberOfPeople += addNewPersonToWaitingLists(time, peopleWaitingPerFloor, elevator);
+                    totalNumberOfPeople += addNewPersonToWaitingLists(time, waitingList, elevators);
                 }
                 time = time.plusSeconds(3);
                 continue;
             }
 
-            Event nextEvent = events.get(time);
+            List<Event> nextEvents = events.get(time);
             events.remove(time);
 
-            if (nextEvent.getName().equals(Event.ELEVATOR_STARTS)) {
+            List<Event> loadingEvents = new ArrayList<>();
 
-                Event event = Event.fromElevatorStart(time, elevator, shadowElevator);
-                LocalTime arrivalTime = event.getTimeOfArrivalFrom(time);
-                events.put(arrivalTime, event);
+            for (Event nextEvent : nextEvents) {
 
-            } else if (nextEvent.getName().equals(Event.ARRIVES_AT_FLOOR)) {
+                Elevator elevator = nextEvent.getElevator();
+                ShadowElevator shadowElevator = shadowElevators.getShadowElevatorFor(elevator);
 
-                Event event = Event.fromArrivesAtFloor(time, elevator, shadowElevator);
-                LocalTime arrivalTime = event.getTimeOfArrivalFrom(time);
-                events.put(arrivalTime, event);
+                if (nextEvent.getName().equals(Event.STOPPING_AT_FLOOR)) {
+                    shadowElevator.stopping();
+                }
 
-            } else if (nextEvent.getName().equals(Event.DOOR_OPENING)) {
+                Event event = null;
+                LocalTime arrivalTime = null;
 
-                Event event = Event.fromDoorOpening(time, elevator, shadowElevator);
-                LocalTime arrivalTime = event.getTimeOfArrivalFrom(time);
-                events.put(arrivalTime, event);
+                if (nextEvent.getName().equals(Event.ELEVATOR_STARTS)) {
 
-            } else if (nextEvent.getName().equals(Event.DOOR_CLOSING)) {
+                    // charge
+                    event = Event.fromElevatorStart(time, elevator, shadowElevator);
 
-                Event event = Event.fromDoorClosing(time, shadowElevator);
-                LocalTime arrivalTime = time.plus(event.getDuration());
-                events.put(arrivalTime, event);
+                } else if (nextEvent.getName().equals(Event.DOOR_OPENING)) {
 
-            } else if (nextEvent.getName().equals(Event.LOADING_FIRST_PERSON)) {
+                    // charge
+                    event = Event.fromDoorOpening(time, elevator, shadowElevator);
 
-                Event event = Event.fromLoadingFirstPerson(time, shadowElevator, elevator, nextEvent);
-                LocalTime arrivalTime = event.getTimeOfArrivalFrom(time);
-                events.put(arrivalTime, event);
+                } else if (nextEvent.getName().equals(Event.LOADING_FIRST_PERSON)) {
 
-            } else if (nextEvent.getName().equals(Event.LOADING_NEXT_PERSON)) {
+                    // charge
+                    event = Event.fromLoadingFirstPerson(time, shadowElevator, elevator, nextEvent);
 
-                Event event = Event.fromLoadingNextPerson(time, shadowElevator, elevator, nextEvent);
-                LocalTime arrivalTime = event.getTimeOfArrivalFrom(time);
-                events.put(arrivalTime, event);
+                } else if (nextEvent.getName().equals(Event.LOADING_NEXT_PERSON)) {
 
-            } else if (nextEvent.getName().equals(Event.UNLOADING_FIRST_PERSON)) {
+                    // charge
+                    event = Event.fromLoadingNextPerson(time, shadowElevator, elevator, nextEvent);
 
-                Event event = Event.fromUnloadingFirstPerson(time, elevator, shadowElevator, nextEvent);
+                } else if (nextEvent.getName().equals(Event.ARRIVES_AT_FLOOR)) {
 
-                LocalTime arrivalTime = event.getTimeOfArrivalFrom(time);
-                events.put(arrivalTime, event);
+                    event = Event.fromArrivesAtFloor(time, elevator, shadowElevator);
 
-            } else if (nextEvent.getName().equals(Event.UNLOADING_NEXT_PERSON)) {
+                } else if (nextEvent.getName().equals(Event.UNLOADING_FIRST_PERSON)) {
 
-                Event event = Event.fromUnloadingNextPerson(time, elevator, shadowElevator, nextEvent);
+                    // charge
+                    event = Event.fromUnloadingFirstPerson(time, shadowElevator, elevator, nextEvent);
 
-                LocalTime arrivalTime = event.getTimeOfArrivalFrom(time);
-                events.put(arrivalTime, event);
+                } else if (nextEvent.getName().equals(Event.UNLOADING_NEXT_PERSON)) {
 
-            } else if (nextEvent.getName().equals(Event.STAND_BY_AT_FLOOR)) {
+                    // charge
+                    event = Event.fromUnloadingNextPerson(time, shadowElevator, elevator, nextEvent);
 
-                Event event = Event.fromStandByAtFloor(time, elevator, shadowElevator);
+                } else if (nextEvent.getName().equals(Event.DOOR_CLOSING)) {
 
-                LocalTime arrivalTime = event.getTimeOfArrivalFrom(time);
-                events.put(arrivalTime, event);
+                    event = Event.fromDoorClosing(time, elevator, shadowElevator);
 
-            } else if (nextEvent.getName().equals(Event.STOPPING_AT_FLOOR)) {
+                } else if (nextEvent.getName().equals(Event.STAND_BY_AT_FLOOR)) {
 
-                shadowElevator.stopping();
+                    event = Event.fromStandByAtFloor(time, elevator, shadowElevator);
+
+                } else if (nextEvent.getName().equals(Event.STOPPING_AT_FLOOR)) {
+
+                    shadowElevator.stopping();
+                }
+
+                if (event != null) {
+                    if (!event.getName().equals(Event.FIRST_LOADING_ATTEMPT) &&
+                            !event.getName().equals(Event.NEXT_LOADING_ATTEMPT)) {
+
+                        arrivalTime = event.getTimeOfArrivalFrom(time);
+                        events.computeIfAbsent(arrivalTime, key -> new ArrayList<>()).add(event);
+
+                    } else {
+
+                        loadingEvents.add(event);
+                    }
+                }
+
+                if (time.isBefore(END_TIME)) {
+                    totalNumberOfPeople += addNewPersonToWaitingLists(time, waitingList, elevators);
+                }
             }
 
-            if (time.isBefore(END_TIME)) {
-                totalNumberOfPeople += addNewPersonToWaitingLists(time, peopleWaitingPerFloor, elevator);
+            if (!loadingEvents.isEmpty()) {
+
+                Map<Integer, List<Event>> loadingEventsByCurrentFloor =
+                        loadingEvents.stream()
+                                .collect(Collectors.groupingBy(Event::getCurrentFloor));
+
+                for (Map.Entry<Integer, List<Event>> concurrentEventsByFloor : loadingEventsByCurrentFloor.entrySet()) {
+
+                    int currentFloor = concurrentEventsByFloor.getKey();
+                    List<Event> concurrentEvents = concurrentEventsByFloor.getValue();
+                    if (concurrentEvents.size() == 1) {
+
+                        Event nextEvent = concurrentEvents.get(0);
+                        Elevator elevator = nextEvent.getElevator();
+                        ShadowElevator shadowElevator = shadowElevators.getShadowElevatorFor(elevator);
+
+                        Event event = null;
+                        LocalTime arrivalTime = null;
+
+                        List<Integer> nextFloors = nextEvent.getNextFloors();
+                        int nextFloor = nextFloors.get(0);
+                        DIRECTION direction = Event.computeDirection(currentFloor, nextFloors);
+
+                        if (nextEvent.getName().equals(Event.FIRST_LOADING_ATTEMPT)) {
+
+                            List<Person> nextPeopleToLoad = shadowElevator.getNextPeopleToLoad(nextFloors, currentFloor);
+                            if (!nextPeopleToLoad.isEmpty()) {
+                                event = new Event.LoadingFirstPerson(elevator, nextPeopleToLoad);
+                            } else {
+                                event = new Event.DoorClosing(elevator, currentFloor, nextFloor);
+                            }
+
+                        } else if (nextEvent.getName().equals(Event.NEXT_LOADING_ATTEMPT)) {
+
+                            List<Person> nextPeopleToLoad = shadowElevator.getNextPeopleToLoad(nextFloors, currentFloor);
+                            if (!nextPeopleToLoad.isEmpty()) {
+                                event = new Event.LoadingNextPerson(elevator, nextPeopleToLoad);
+                            } else {
+                                event = new Event.DoorClosing(elevator, currentFloor, nextFloor);
+                            }
+                        }
+
+                        arrivalTime = event.getTimeOfArrivalFrom(time);
+                        events.computeIfAbsent(arrivalTime, key -> new ArrayList<>()).add(event);
+
+                    } else {
+
+                        Map<Integer, List<Event>> eventByDestinationFloor = concurrentEvents.stream()
+                                .flatMap(event -> event.getNextFloors().stream().map(floor -> Map.entry(floor, event)))
+                                .collect(
+                                        Collectors.groupingBy(
+                                                Map.Entry::getKey,
+                                                Collectors.mapping(Map.Entry::getValue, Collectors.toList())
+                                        ));
+
+                        List<Person> peopleWaitingAtFloor = waitingList.getListFor(currentFloor);
+                        for (Person person : peopleWaitingAtFloor) {
+                            int destinationFloor = person.getDestinationFloor();
+                            List<Event> possibleEvents = eventByDestinationFloor.get(destinationFloor);
+                            if (possibleEvents == null) {
+                                continue;
+                            }
+                            // 1st criteria: there is room in the elevator
+                            Predicate<Event> roomAvailable =
+                                    event -> shadowElevatorsRegistry.get(event.getElevator().getId()).availableRoom();
+                            possibleEvents = possibleEvents.stream()
+                                    .filter(roomAvailable)
+                                    .collect(Collectors.toList());
+                            // 2nd criteria: fastest travel
+                            Function<Event, Integer> timeToReachFloor =
+                                    event -> event.getNextFloors().indexOf(destinationFloor);
+                            possibleEvents =
+                                    possibleEvents.stream().collect(Collectors.groupingBy(timeToReachFloor))
+                                            .entrySet().stream()
+                                            .min(Map.Entry.comparingByKey())
+                                            .map(Map.Entry::getValue)
+                                            .orElseThrow();
+                            // 3rd criteria: least number of people
+                            Function<Event, Integer> numberOfPeople =
+                                    event -> shadowElevatorsRegistry.get(event.getElevator().getId()).getNumberOfPeople();
+                            possibleEvents.stream().collect(Collectors.groupingBy(numberOfPeople))
+                                    .entrySet().stream()
+                                    .min(Map.Entry.comparingByKey())
+                                    .map(Map.Entry::getValue)
+                                    .orElseThrow();
+                            // 3rd criteria: random draw
+                            Event selectedEvent = waitingList.chooseEventFrom(possibleEvents);
+                            if (selectedEvent instanceof Event.AttemptToLoadFirstPerson) {
+                                Event.AttemptToLoadFirstPerson loadingAttempt = (Event.AttemptToLoadFirstPerson) selectedEvent;
+                                waitingList.removePeopleFromFloor(currentFloor, person);
+                                loadingAttempt.addPerson(person);
+                            } else if (selectedEvent instanceof Event.AttemptToLoadNextPerson) {
+                                Event.AttemptToLoadNextPerson loadingAttempt = (Event.AttemptToLoadNextPerson) selectedEvent;
+                                waitingList.removePeopleFromFloor(currentFloor, person);
+                                loadingAttempt.addPerson(person);
+                            }
+                        }
+
+                        for (Event nextEvent : concurrentEvents) {
+                            Elevator elevator = nextEvent.getElevator();
+                            ShadowElevator shadowElevator = shadowElevators.getShadowElevatorFor(elevator);
+
+                            Event event = null;
+                            LocalTime arrivalTime = null;
+
+                            List<Integer> nextFloors = nextEvent.getNextFloors();
+                            int nextFloor = nextFloors.get(0);
+
+                            if (nextEvent instanceof Event.AttemptToLoadFirstPerson) {
+
+                                Event.AttemptToLoadFirstPerson loadingAttempt = (Event.AttemptToLoadFirstPerson) nextEvent;
+
+                                List<Person> nextPeopleToLoad = loadingAttempt.getPeopleToLoad();
+                                if (!nextPeopleToLoad.isEmpty()) {
+                                    event = new Event.LoadingFirstPerson(elevator, nextPeopleToLoad);
+                                } else {
+                                    event = new Event.DoorClosing(elevator, currentFloor, nextFloor);
+                                }
+
+                            } else if (nextEvent instanceof Event.AttemptToLoadNextPerson) {
+
+                                Event.AttemptToLoadNextPerson loadingAttempt = (Event.AttemptToLoadNextPerson) nextEvent;
+
+                                List<Person> nextPeopleToLoad = loadingAttempt.getPeopleToLoad();
+                                if (!nextPeopleToLoad.isEmpty()) {
+                                    event = new Event.LoadingNextPerson(elevator, nextPeopleToLoad);
+                                } else {
+                                    event = new Event.DoorClosing(elevator, currentFloor, nextFloor);
+                                }
+                            }
+
+                            arrivalTime = event.getTimeOfArrivalFrom(time);
+                            events.computeIfAbsent(arrivalTime, key -> new ArrayList<>()).add(event);
+                        }
+                    }
+                }
             }
+
             time = time.plusSeconds(3);
         }
-        peopleWaitingPerFloor.print();
-        shadowElevator.printPeople();
-        printers.forEach(printer -> {
-            printer.printf("[%s] Times up\n", time);
-            printer.println("People loaded: " + shadowElevator.getCount());
-            printer.println("Max people loaded: " + shadowElevator.getMaxLoad());
-        });
-        printDurationHistogram();
+
+        waitingList.print();
+        shadowElevators.printPeople();
+        System.out.printf("[%s] Times up\n", time);
+        shadowElevators.printCounts();
+        shadowElevators.printMaxes();
+        Event.durations.forEach(
+                (duration, count) ->
+                        System.out.printf("%2dh %2dmn %2ds -> %d\n", duration.toHoursPart(), duration.toMinutesPart(), duration.toSecondsPart(), count)
+        );
 
         long numberOfPeople =
                 Event.durations.values().stream().mapToLong(l -> l).sum();
-        Optional<Duration> maxDurationOpt =
-                Event.durations.keySet().stream().max(Comparator.naturalOrder());
-        if (maxDurationOpt.isPresent()) {
-            Duration maxDuration = maxDurationOpt.orElseThrow();
-            long sum =
-                    Event.durations.entrySet().stream().mapToLong(entry -> entry.getKey().getSeconds() * entry.getValue()).sum();
-            Duration averageDuration = Duration.ofSeconds(sum / numberOfPeople);
+        Duration maxDuration =
+                Event.durations.keySet().stream().max(Comparator.naturalOrder()).orElseThrow();
+        LongSummaryStatistics stats = Event.durations.entrySet().stream()
+                .collect(Collectors.summarizingLong(entry -> entry.getKey().getSeconds() * entry.getValue()));
+        Duration averageDuration = Duration.ofSeconds((long) stats.getAverage());
 
-            printers.forEach(printer -> {
-                printer.println("Number of people taken = " + numberOfPeople);
-                printer.printf("Average waiting time = %dmn %ds\n",
-                        averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
-                printer.printf("Max waiting time = %dh %dmn %ds\n",
-                        maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
-                printer.println("People left in elevator = " + shadowElevator.numberOfPeopleInElevator());
-                printer.println("People left in floors = " + peopleWaitingPerFloor.countPeople());
-            });
-        }
-
-        System.out.println("Day is finished");
+        System.out.println("Number of people taken = " + numberOfPeople);
+        System.out.printf("Average waiting time = %dmn %ds\n",
+                averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
+        System.out.printf("Max waiting time = %dh %dmn %ds\n",
+                maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
+        System.out.println("Total people generated = " + WaitingList.countPeopleGenerated);
+        System.out.println("Total people removed = " + WaitingList.countPeopleRemoved);
     }
 
-    private static int addNewPersonToWaitingLists(LocalTime time, WaitingList peopleWaitingPerFloor, Elevator elevator) {
+    private static int addNewPersonToWaitingLists(LocalTime time, WaitingList peopleWaitingPerFloor, Elevators elevators) {
         Optional<Map.Entry<Integer, Person>> newPersonWaiting = peopleWaitingPerFloor.addNewPeopleToLists(time);
         if (newPersonWaiting.isPresent()) {
             int floor = newPersonWaiting.orElseThrow().getKey();
             Person person = newPersonWaiting.orElseThrow().getValue();
-            elevator.newPersonWaitingAtFloor(floor, person);
-            PRINTER.printf("\n[%s] %s calls the elevator from floor %d to go to floor %d\n", time, person.getName(), floor, person.getDestinationFloor());
-            PRINTER.printf("Waiting list is now:\n");
+            elevators.newPersonWaitingAtFloor(floor, person);
+            System.out.printf("\n[%s] %s calls the elevator from floor %d to go to floor %d\n", time, person.getName(), floor, person.getDestinationFloor());
+            System.out.printf("Waiting list is now:\n");
             peopleWaitingPerFloor.print();
             return 1;
         } else {
             return 0;
+        }
+    }
+
+    public static class Elevators {
+
+        private List<Elevator> elevators;
+
+        Elevators(List<Elevator> elevators) {
+            this.elevators = elevators;
+        }
+
+        public void peopleWaiting(WaitingList waitingList) {
+            this.elevators.forEach(elevator -> elevator.peopleWaiting(waitingList.getLists()));
+        }
+
+        public void timeIs(LocalTime time) {
+            this.elevators.forEach(elevator -> elevator.timeIs(time));
+        }
+
+        public void lastPersonArrived() {
+            this.elevators.forEach(Elevator::lastPersonArrived);
+        }
+
+        public List<Elevator> getElevators() {
+            return this.elevators;
+        }
+
+        public void newPersonWaitingAtFloor(int floor, Person person) {
+            elevators.stream().forEach(elevator -> elevator.newPersonWaitingAtFloor(floor, person));
+        }
+    }
+
+    private static class ShadowElevators {
+
+        private Map<String, ShadowElevator> shadowElevators;
+
+        ShadowElevators(Map<String, ShadowElevator> shadowElevators) {
+            this.shadowElevators = shadowElevators;
+        }
+
+        boolean areStillRunning() {
+            return shadowElevators.values().stream()
+                    .anyMatch(ShadowElevator::isRunning);
+        }
+
+        public void lastPersonArrived() {
+            shadowElevators.values().forEach(ShadowElevator::lastPersonArrived);
+        }
+
+        public ShadowElevator getShadowElevatorFor(Elevator elevator) {
+            return shadowElevators.get(elevator.getId());
+        }
+
+        public void printPeople() {
+            shadowElevators.values().forEach(ShadowElevator::printPeople);
+        }
+
+        public void printCounts() {
+            long totalLoadedCount = 0L;
+            long totalUnloadedCount = 0L;
+            for (ShadowElevator shadowElevator : shadowElevators.values()) {
+                long loaded = shadowElevator.getCountLoadedPeople();
+                totalLoadedCount += loaded;
+                long unloaded = shadowElevator.getCountUnloadedPeople();
+                totalUnloadedCount += unloaded;
+                System.out.printf("\tElevator [%s] people loaded: %d\n", shadowElevator.getId(), loaded);
+                System.out.printf("\tElevator [%s] people unloaded: %d\n", shadowElevator.getId(), unloaded);
+            }
+            System.out.printf("Total people loaded: %d\n", totalLoadedCount);
+            System.out.printf("Total people unloaded: %d\n", totalUnloadedCount);
+        }
+
+        public void printMaxes() {
+            for (ShadowElevator shadowElevator : shadowElevators.values()) {
+                System.out.printf("\tElevator [%s] max people loaded: %d\n", shadowElevator.getId(), shadowElevator.getMaxLoad());
+            }
         }
     }
 

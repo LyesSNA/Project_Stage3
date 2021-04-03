@@ -11,8 +11,15 @@ import java.util.List;
 public class DumbElevator implements Elevator {
     private DIRECTION direction = DIRECTION.UP;
     private int currentFloor = 1;
+    private final String id;
 
-    public DumbElevator(int capacity) {
+
+    public DumbElevator(int capacity, String id) {
+        this.id = id;
+    }
+    @Override
+    public String getId() {
+        return this.id;
     }
 
     @Override

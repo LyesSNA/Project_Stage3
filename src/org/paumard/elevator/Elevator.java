@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface Elevator {
 
+    String getId();
+
     void startsAtFloor(LocalTime time, int initialFloor);
 
     void peopleWaiting(List<List<Person>> peopleByFloor);

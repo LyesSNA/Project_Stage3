@@ -16,25 +16,28 @@ import static org.paumard.elevator.Building.PRINTER;
 public class ShadowElevator {
 
     private final int elevatorCapacity;
-    private WaitingList waitingList;
     private int currentFloor = 1;
     private List<Person> people = new ArrayList<>();
     private List<Integer> nextFloors;
     private boolean lastPersonArrived = false;
     private boolean stopped;
-    private long count = 0L;
+    private long countLoadedPeople = 0L;
+    private long countUnloadedPeople = 0L;
     private int maxLoad;
+    private String elevatorId;
+    private WaitingList waitingList;
 
-    public ShadowElevator(int elevatorCapacity, WaitingList peopleWaitingPerFloor) {
+    public ShadowElevator(int elevatorCapacity, String elevatorId, WaitingList waitingList) {
         this.elevatorCapacity = elevatorCapacity;
-        this.waitingList = peopleWaitingPerFloor;
+        this.elevatorId = elevatorId;
+        this.waitingList = waitingList;
     }
 
     public void print(LocalTime time) {
         Duration totalDuration = Duration.between(Building.START_TIME, time);
         int s = totalDuration.toSecondsPart();
         int mn = totalDuration.toMinutesPart();
-        PRINTER.printf("Total duration = %dmn %ds\n", mn, s);
+        System.out.printf("Total duration = %dmn %ds\n", mn, s);
     }
 
     public int getCurrentFloor() {
@@ -58,10 +61,10 @@ public class ShadowElevator {
 
     public void printPeople() {
         if (people.isEmpty()) {
-            PRINTER.printf("Elevator stopped at floor %d No one left in the elevator\n", this.currentFloor);
+            System.out.printf("Elevator [%s] stopped at floor %d No one left in the elevator\n", this.elevatorId, this.currentFloor);
         } else {
-            PRINTER.printf("Elevator stopped at floor %d with the following people\n", this.currentFloor);
-            people.forEach(p -> PRINTER.println("\t" + p));
+            System.out.printf("Elevator [%s] stopped at floor %d\n", this.elevatorId, this.currentFloor);
+            people.forEach(p -> System.out.println("\t" + p));
         }
     }
 
@@ -83,12 +86,13 @@ public class ShadowElevator {
     }
 
     public void loadPeople(List<Person> people) {
-        count += people.size();
+        countLoadedPeople += people.size();
         this.people.addAll(people);
         maxLoad = Integer.max(maxLoad, this.people.size());
     }
 
     public void unload(List<Person> people) {
+        countUnloadedPeople += people.size();
         this.people.removeAll(people);
     }
 
@@ -99,10 +103,19 @@ public class ShadowElevator {
             if (nextLoadablePeople.size() > availableRoom) {
                 nextLoadablePeople = nextLoadablePeople.subList(0, availableRoom);
             }
-            waitingList.removePeopleFromFloor(currentFloor, nextLoadablePeople);
+            waitingList.removePersonFromFloor(currentFloor, nextLoadablePeople);
             return nextLoadablePeople;
         } else {
             return List.of();
+        }
+    }
+
+    public boolean hasNextPeopleToLoad(List<Integer> nextFloors, int currentFloor) {
+        if (this.people.size() < this.elevatorCapacity) {
+            boolean hasLoadablePeople = waitingList.hasLoadablePeople(nextFloors, currentFloor);
+            return hasLoadablePeople;
+        } else {
+            return false;
         }
     }
 
@@ -130,15 +143,31 @@ public class ShadowElevator {
         return stopped;
     }
 
-    public long getCount() {
-        return count;
+    public boolean isRunning() {
+        return !stopped;
+    }
+
+    public long getCountLoadedPeople() {
+        return countLoadedPeople;
+    }
+
+    public long getCountUnloadedPeople() {
+        return countUnloadedPeople;
     }
 
     public int getMaxLoad() {
         return this.maxLoad;
     }
 
-    public int numberOfPeopleInElevator() {
+    public String getId() {
+        return this.elevatorId;
+    }
+
+    public int getNumberOfPeople() {
         return this.people.size();
+    }
+
+    public boolean availableRoom() {
+        return this.people.size() < Building.ELEVATOR_CAPACITY;
     }
 }
