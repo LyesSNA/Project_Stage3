@@ -31,6 +31,10 @@ public class Building {
 
     public static void main(String[] args) throws FileNotFoundException {
 
+        System.out.println("Start time = " + START_TIME);
+        System.out.println("End time = " + END_TIME);
+        System.out.println("End of day = " + END_OF_DAY);
+
         // PRINTER = System.out;
         PRINTER = new PrintStream("logs/debug.log");
 
@@ -304,7 +308,10 @@ public class Building {
         waitingList.print();
         shadowElevators.printPeople();
         PRINTER.printf("[%s] Times up\n", time);
-        shadowElevators.printCounts();
+        if (PRINTER != System.out) {
+            System.out.printf("[%s] Times up\n", time);
+        }
+        // shadowElevators.printCounts();
         shadowElevators.printMaxes();
         printDurationHistogram();
 
@@ -424,6 +431,9 @@ public class Building {
         public void printMaxes() {
             for (ShadowElevator shadowElevator : shadowElevators.values()) {
                 PRINTER.printf("\tElevator [%s] max people loaded: %d\n", shadowElevator.getId(), shadowElevator.getMaxLoad());
+                if (PRINTER != System.out) {
+                    System.out.printf("\tElevator [%s] max people loaded: %d\n", shadowElevator.getId(), shadowElevator.getMaxLoad());
+                }
             }
         }
     }
@@ -454,7 +464,7 @@ public class Building {
         if (PRINTER != System.out) {
             durations.forEach(
                     (duration, count) ->
-                            PRINTER.printf("%2dh %2dmn %2ds -> %d\n", duration.toHoursPart(), duration.toMinutesPart(), duration.toSecondsPart(), count)
+                            System.out.printf("%2dh %2dmn %2ds -> %d\n", duration.toHoursPart(), duration.toMinutesPart(), duration.toSecondsPart(), count)
             );
         }
     }
