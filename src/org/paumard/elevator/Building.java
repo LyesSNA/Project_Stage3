@@ -67,7 +67,7 @@ public class Building {
             elevators.timeIs(time);
 
             if (time.equals(END_TIME)) {
-                System.out.printf("\n[%s]No more people are coming.\n", time.toString());
+                PRINTER.printf("\n[%s]No more people are coming.\n", time.toString());
                 shadowElevators.lastPersonArrived();
                 elevators.lastPersonArrived();
             }
@@ -305,13 +305,10 @@ public class Building {
 
         waitingList.print();
         shadowElevators.printPeople();
-        System.out.printf("[%s] Times up\n", time);
+        PRINTER.printf("[%s] Times up\n", time);
         shadowElevators.printCounts();
         shadowElevators.printMaxes();
-        Event.durations.forEach(
-                (duration, count) ->
-                        System.out.printf("%2dh %2dmn %2ds -> %d\n", duration.toHoursPart(), duration.toMinutesPart(), duration.toSecondsPart(), count)
-        );
+        printDurationHistogram();
 
         long numberOfPeople =
                 Event.durations.values().stream().mapToLong(l -> l).sum();
@@ -348,8 +345,8 @@ public class Building {
             int floor = newPersonWaiting.orElseThrow().getKey();
             Person person = newPersonWaiting.orElseThrow().getValue();
             elevators.newPersonWaitingAtFloor(floor, person);
-            System.out.printf("\n[%s] %s calls the elevator from floor %d to go to floor %d\n", time, person.getName(), floor, person.getDestinationFloor());
-            System.out.printf("Waiting list is now:\n");
+            PRINTER.printf("\n[%s] %s calls the elevator from floor %d to go to floor %d\n", time, person.getName(), floor, person.getDestinationFloor());
+            PRINTER.printf("Waiting list is now:\n");
             peopleWaitingPerFloor.print();
             return 1;
         } else {
@@ -419,16 +416,16 @@ public class Building {
                 totalLoadedCount += loaded;
                 long unloaded = shadowElevator.getCountUnloadedPeople();
                 totalUnloadedCount += unloaded;
-                System.out.printf("\tElevator [%s] people loaded: %d\n", shadowElevator.getId(), loaded);
-                System.out.printf("\tElevator [%s] people unloaded: %d\n", shadowElevator.getId(), unloaded);
+                PRINTER.printf("\tElevator [%s] people loaded: %d\n", shadowElevator.getId(), loaded);
+                PRINTER.printf("\tElevator [%s] people unloaded: %d\n", shadowElevator.getId(), unloaded);
             }
-            System.out.printf("Total people loaded: %d\n", totalLoadedCount);
-            System.out.printf("Total people unloaded: %d\n", totalUnloadedCount);
+            PRINTER.printf("Total people loaded: %d\n", totalLoadedCount);
+            PRINTER.printf("Total people unloaded: %d\n", totalUnloadedCount);
         }
 
         public void printMaxes() {
             for (ShadowElevator shadowElevator : shadowElevators.values()) {
-                System.out.printf("\tElevator [%s] max people loaded: %d\n", shadowElevator.getId(), shadowElevator.getMaxLoad());
+                PRINTER.printf("\tElevator [%s] max people loaded: %d\n", shadowElevator.getId(), shadowElevator.getMaxLoad());
             }
         }
     }
@@ -453,7 +450,7 @@ public class Building {
 
         durations.forEach(
                 (duration, count) ->
-                        System.out.printf("%2dh %2dmn %2ds -> %d\n", duration.toHoursPart(), duration.toMinutesPart(), duration.toSecondsPart(), count)
+                        PRINTER.printf("%2dh %2dmn %2ds -> %d\n", duration.toHoursPart(), duration.toMinutesPart(), duration.toSecondsPart(), count)
         );
 
         if (PRINTER != System.out) {

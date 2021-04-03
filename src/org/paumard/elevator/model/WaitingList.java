@@ -12,8 +12,7 @@ import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.paumard.elevator.Building.MAX_FLOOR;
-import static org.paumard.elevator.Building.random;
+import static org.paumard.elevator.Building.*;
 
 public class WaitingList {
 
@@ -92,11 +91,11 @@ public class WaitingList {
     public void print() {
         for (int index = 0; index < peopleWaitingPerFloor.size(); index++) {
             int floor = index + 1;
-            System.out.println("People waiting on floor " + floor);
+            PRINTER.println("People waiting on floor " + floor);
             if (peopleWaitingPerFloor.get(index).isEmpty()) {
-                System.out.println("\tNo one");
+                PRINTER.println("\tNo one");
             } else {
-                peopleWaitingPerFloor.get(index).forEach(p -> System.out.println("\t" + p));
+                peopleWaitingPerFloor.get(index).forEach(p -> PRINTER.println("\t" + p));
             }
         }
     }
