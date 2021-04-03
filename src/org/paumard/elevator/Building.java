@@ -4,7 +4,6 @@ import org.paumard.elevator.event.Event;
 import org.paumard.elevator.model.Person;
 import org.paumard.elevator.model.WaitingList;
 import org.paumard.elevator.student.DumbElevator;
-import org.paumard.elevator.student.DumbElevatorForVIP;
 import org.paumard.elevator.system.ShadowElevator;
 
 import java.io.FileNotFoundException;
@@ -12,7 +11,6 @@ import java.io.PrintStream;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Building {
 
@@ -41,7 +39,7 @@ public class Building {
         events.put(time, startEvent);
 
         WaitingList peopleWaitingPerFloor = new WaitingList();
-        Elevator elevator = new DumbElevatorForVIP(ELEVATOR_CAPACITY);
+        Elevator elevator = new DumbElevator(ELEVATOR_CAPACITY);
 
 
         int totalNumberOfPeople = peopleWaitingPerFloor.countPeople();
