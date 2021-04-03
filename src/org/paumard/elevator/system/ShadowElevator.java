@@ -48,6 +48,10 @@ public class ShadowElevator {
         return new ArrayList<>(people);
     }
 
+    public int numberOfPeopleInElevator() {
+        return this.people.size();
+    }
+
     public List<Person> getNextPeopleToUnload(int currentFloor) {
         List<Person> peopleToUnload =
                 people.stream()

@@ -7,6 +7,7 @@ import org.paumard.elevator.model.WaitingList;
 import org.paumard.elevator.student.DumbElevator;
 import org.paumard.elevator.system.ShadowElevator;
 
+import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.time.LocalTime;
@@ -28,7 +29,12 @@ public class Building {
     public static Random random = new Random(10L); // 10L
     private static LocalTime time = START_TIME;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
+
+        // PRINTER = System.out;
+        PRINTER = new PrintStream("logs/debug.log");
+
+        Set<PrintStream> printers = new HashSet<>(List.of(PRINTER, System.out));
 
         NavigableMap<LocalTime, List<Event>> events = new TreeMap<>();
 
@@ -39,7 +45,7 @@ public class Building {
 
         Elevator elevator1 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 1");
         Elevator elevator2 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 2");
-        Elevators elevators = new Elevators(List.of(elevator1));
+        Elevators elevators = new Elevators(List.of(elevator1, elevator2));
 
         List<Event> startEvents = Event.createStartEventFor(elevators);
         events.put(time, startEvents);
@@ -309,19 +315,31 @@ public class Building {
 
         long numberOfPeople =
                 Event.durations.values().stream().mapToLong(l -> l).sum();
-        Duration maxDuration =
-                Event.durations.keySet().stream().max(Comparator.naturalOrder()).orElseThrow();
-        LongSummaryStatistics stats = Event.durations.entrySet().stream()
-                .collect(Collectors.summarizingLong(entry -> entry.getKey().getSeconds() * entry.getValue()));
-        Duration averageDuration = Duration.ofSeconds((long) stats.getAverage());
+        Optional<Duration> maxDurationOpt =
+                Event.durations.keySet().stream().max(Comparator.naturalOrder());
+        if (maxDurationOpt.isPresent()) {
+            Duration maxDuration = maxDurationOpt.orElseThrow();
+            long sum =
+                    Event.durations.entrySet().stream().mapToLong(entry -> entry.getKey().getSeconds() * entry.getValue()).sum();
+            Duration averageDuration = Duration.ofSeconds(sum / numberOfPeople);
 
-        System.out.println("Number of people taken = " + numberOfPeople);
-        System.out.printf("Average waiting time = %dmn %ds\n",
-                averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
-        System.out.printf("Max waiting time = %dh %dmn %ds\n",
-                maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
-        System.out.println("Total people generated = " + WaitingList.countPeopleGenerated);
-        System.out.println("Total people removed = " + WaitingList.countPeopleRemoved);
+            printers.forEach(printer -> {
+                printer.println("Number of people taken = " + numberOfPeople);
+                printer.printf("Average waiting time = %dmn %ds\n",
+                        averageDuration.toMinutesPart(), averageDuration.toSecondsPart());
+                printer.printf("Max waiting time = %dh %dmn %ds\n",
+                        maxDuration.toHoursPart(), maxDuration.toMinutesPart(), maxDuration.toSecondsPart());
+                printer.println("People left in floors = " + waitingList.countPeople());
+            });
+            elevators.getElevators().forEach(
+                    elevator -> {
+                        printers.forEach(printer -> {
+                            printer.println("People left in elevator [" + elevator.getId() + "] = "
+                                    + shadowElevators.getShadowElevatorFor(elevator).numberOfPeopleInElevator());
+                        });
+                    }
+            );
+        }
     }
 
     private static int addNewPersonToWaitingLists(LocalTime time, WaitingList peopleWaitingPerFloor, Elevators elevators) {
