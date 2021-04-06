@@ -24,6 +24,7 @@ public class DumbElevator implements Elevator {
 
     @Override
     public void startsAtFloor(LocalTime time, int initialFloor) {
+        this.currentFloor = initialFloor;
     }
 
     @Override

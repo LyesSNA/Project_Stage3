@@ -34,4 +34,12 @@ public class Elevators {
     public void newPersonWaitingAtFloor(int floor, Person person) {
         elevators.stream().forEach(elevator -> elevator.newPersonWaitingAtFloor(floor, person));
     }
+
+    public int count() {
+        return this.elevators.size();
+    }
+
+    public String getElevatorId(int indexElevator) {
+        return this.elevators.get(indexElevator).getId();
+    }
 }

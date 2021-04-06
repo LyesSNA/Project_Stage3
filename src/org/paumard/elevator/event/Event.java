@@ -128,36 +128,40 @@ public class Event {
         return direction;
     }
 
-    public static Event fromElevatorStart(LocalTime time, Elevator elevator, ShadowElevator shadowElevator) {
-        Event event;
-        int currentFloor = 1;
-        PRINTER.printf("\n[%s] Elevator [%s] starting at floor %d\n", time, elevator.getId(), currentFloor);
 
-        elevator.startsAtFloor(time, currentFloor);
-        shadowElevator.startsAtFloor(currentFloor);
+    public static Event fromElevatorStartAtFloor(LocalTime time, Elevator elevator, ShadowElevator shadowElevator, int startingFloor) {
+
+        PRINTER.printf("\n[%s] Elevator [%s] starting at floor %d\n", time, elevator.getId(), startingFloor);
+
+        elevator.startsAtFloor(time, startingFloor);
+        shadowElevator.startsAtFloor(startingFloor);
 
         List<Integer> nextFloors = elevator.chooseNextFloors();
-        printElevatorGoingTo(time, elevator, currentFloor, nextFloors);
+        printElevatorGoingTo(time, elevator, startingFloor, nextFloors);
 
-        DIRECTION direction = computeDirection(currentFloor, nextFloors);
+        DIRECTION direction = computeDirection(startingFloor, nextFloors);
 
-        int nextFloor = direction == DIRECTION.STOP ? currentFloor : nextFloors.get(0);
+        int nextFloor = direction == DIRECTION.STOP ? startingFloor : nextFloors.get(0);
         shadowElevator.setNextFloors(nextFloors);
 
         if (direction == DIRECTION.STOP) {
             if (shadowElevator.hasLastPersonArrived()) {
                 shadowElevator.stopping();
-                PRINTER.printf("\n[%s] Elevator [%s] stopping at floor %d\n", time, elevator.getId(), currentFloor);
-                return new StoppingAtFloor(elevator, currentFloor);
+                PRINTER.printf("\n[%s] Elevator [%s] stopping at floor %d\n", time, elevator.getId(), startingFloor);
+                return new StoppingAtFloor(elevator, startingFloor);
             } else {
-                PRINTER.printf("\n[%s] Elevator [%s] standby at floor %d\n", time, elevator.getId(), currentFloor);
+                PRINTER.printf("\n[%s] Elevator [%s] standby at floor %d\n", time, elevator.getId(), startingFloor);
                 return new StandByAtFloor(elevator);
             }
         }
 
-        PRINTER.printf("[%s] Elevator [%s] going %s to floor %d from floor %d\n", time, elevator.getId(), direction, nextFloor, currentFloor);
+        PRINTER.printf("[%s] Elevator [%s] going %s to floor %d from floor %d\n", time, elevator.getId(), direction, nextFloor, startingFloor);
 
-        return new AttemptToLoadFirstPerson(elevator, currentFloor, nextFloors);
+        return new AttemptToLoadFirstPerson(elevator, startingFloor, nextFloors);
+    }
+
+    public static Event fromElevatorStart(LocalTime time, Elevator elevator, ShadowElevator shadowElevator) {
+        return fromElevatorStartAtFloor(time, elevator, shadowElevator, 1);
     }
 
     public static Event fromArrivesAtFloor(LocalTime time, Elevator elevator, ShadowElevator shadowElevator) {

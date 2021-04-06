@@ -78,14 +78,26 @@ public class WaitingList {
     public static List<List<Person>> peopleWaitingPerFloor;
 
     public static WaitingList getInstance() {
-        return new WaitingList();
+        WaitingList waitingList = new WaitingList();
+        peopleWaitingPerFloor = new ArrayList<>();
+        for (int floorIndex = 0; floorIndex < MAX_FLOOR; floorIndex++) {
+            peopleWaitingPerFloor.add(new ArrayList<>());
+        }
+        return waitingList;
+    }
+
+    public static WaitingList getInstanceWith(List<List<Person>> waitingLists) {
+        WaitingList waitingList = new WaitingList();
+        peopleWaitingPerFloor = new ArrayList<>();
+        for (int floorIndex = 0; floorIndex < MAX_FLOOR; floorIndex++) {
+            List<Person> people = new ArrayList<>(waitingLists.get(floorIndex));
+            peopleWaitingPerFloor.add(people);
+        }
+        return waitingList;
     }
 
     private WaitingList() {
-        peopleWaitingPerFloor = new ArrayList<>();
-        for (int floor = 0; floor < MAX_FLOOR; floor++) {
-            peopleWaitingPerFloor.add(createWaitingPeople(floor));
-        }
+
     }
 
     public void print() {
@@ -98,11 +110,6 @@ public class WaitingList {
                 peopleWaitingPerFloor.get(index).forEach(p -> PRINTER.println("\t" + p));
             }
         }
-    }
-
-    private List<Person> createWaitingPeople(int floor) {
-
-        return new ArrayList<>();
     }
 
     public Optional<Map.Entry<Integer, Person>> addNewPeopleToLists(LocalTime time) {
