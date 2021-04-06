@@ -6,6 +6,7 @@ import org.paumard.elevator.event.Event;
 import org.paumard.elevator.model.Person;
 import org.paumard.elevator.model.WaitingList;
 import org.paumard.elevator.student.DumbElevator;
+import org.paumard.elevator.student.DumbElevatorForVIP;
 import org.paumard.elevator.system.Elevators;
 import org.paumard.elevator.system.ShadowElevator;
 import org.paumard.elevator.system.ShadowElevators;
@@ -80,7 +81,10 @@ public class RunAsTest {
                     nextLine = reader.readLine().trim();
                 }
                 if (Objects.equals(nextLine, "No one")) {
-                    nextLine = reader.readLine().trim();
+                    String readLine = reader.readLine();
+                    if (readLine != null) {
+                    	nextLine = readLine.trim();
+                    }
                 } else if (isPersonLine(nextLine)) {
 
                     while (isPersonLine(nextLine)) {
@@ -112,9 +116,9 @@ public class RunAsTest {
         WaitingList waitingList = WaitingList.getInstanceWith(waitingLists);
         int totalNumberOfPeople = waitingList.countPeople();
 
-        Elevator elevator1 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 1");
-        Elevator elevator2 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 2");
-        Elevators elevators = new Elevators(List.of(elevator1, elevator2));
+        Elevator elevator1 = new DumbElevatorForVIP(ELEVATOR_CAPACITY, "VIP 1");
+        // Elevator elevator2 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 2");
+        Elevators elevators = new Elevators(List.of(elevator1));
 
         Map<String, Integer> startingFloors = new HashMap<>();
         for (int indexElevator = 0 ; indexElevator < elevators.count() ; indexElevator++) {
