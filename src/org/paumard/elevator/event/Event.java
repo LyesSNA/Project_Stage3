@@ -1,8 +1,8 @@
 package org.paumard.elevator.event;
 
-import org.paumard.elevator.Building;
 import org.paumard.elevator.Elevator;
 import org.paumard.elevator.model.Person;
+import org.paumard.elevator.system.Elevators;
 import org.paumard.elevator.system.ShadowElevator;
 
 import java.time.Duration;
@@ -13,7 +13,6 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static org.paumard.elevator.Building.ELEVATOR_LOADING_CAPACITY;
 import static org.paumard.elevator.Building.PRINTER;
 
 public class Event {
@@ -82,7 +81,7 @@ public class Event {
         this.duration = Duration.ofSeconds(0);
     }
 
-    public static List<Event> createStartEventFor(Building.Elevators elevators) {
+    public static List<Event> createStartEventFor(Elevators elevators) {
         return elevators.getElevators().stream()
                 .map(elevator -> new Event(elevator, ELEVATOR_STARTS))
                 .collect(Collectors.toList());

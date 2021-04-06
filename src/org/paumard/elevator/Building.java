@@ -5,7 +5,9 @@ import org.paumard.elevator.event.Event;
 import org.paumard.elevator.model.Person;
 import org.paumard.elevator.model.WaitingList;
 import org.paumard.elevator.student.DumbElevator;
+import org.paumard.elevator.system.Elevators;
 import org.paumard.elevator.system.ShadowElevator;
+import org.paumard.elevator.system.ShadowElevators;
 
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
@@ -356,85 +358,6 @@ public class Building {
             return 1;
         } else {
             return 0;
-        }
-    }
-
-    public static class Elevators {
-
-        private List<Elevator> elevators;
-
-        Elevators(List<Elevator> elevators) {
-            this.elevators = elevators;
-        }
-
-        public void peopleWaiting(WaitingList waitingList) {
-            this.elevators.forEach(elevator -> elevator.peopleWaiting(waitingList.getLists()));
-        }
-
-        public void timeIs(LocalTime time) {
-            this.elevators.forEach(elevator -> elevator.timeIs(time));
-        }
-
-        public void lastPersonArrived() {
-            this.elevators.forEach(Elevator::lastPersonArrived);
-        }
-
-        public List<Elevator> getElevators() {
-            return this.elevators;
-        }
-
-        public void newPersonWaitingAtFloor(int floor, Person person) {
-            elevators.stream().forEach(elevator -> elevator.newPersonWaitingAtFloor(floor, person));
-        }
-    }
-
-    private static class ShadowElevators {
-
-        private Map<String, ShadowElevator> shadowElevators;
-
-        ShadowElevators(Map<String, ShadowElevator> shadowElevators) {
-            this.shadowElevators = shadowElevators;
-        }
-
-        boolean areStillRunning() {
-            return shadowElevators.values().stream()
-                    .anyMatch(ShadowElevator::isRunning);
-        }
-
-        public void lastPersonArrived() {
-            shadowElevators.values().forEach(ShadowElevator::lastPersonArrived);
-        }
-
-        public ShadowElevator getShadowElevatorFor(Elevator elevator) {
-            return shadowElevators.get(elevator.getId());
-        }
-
-        public void printPeople() {
-            shadowElevators.values().forEach(ShadowElevator::printPeople);
-        }
-
-        public void printCounts() {
-            long totalLoadedCount = 0L;
-            long totalUnloadedCount = 0L;
-            for (ShadowElevator shadowElevator : shadowElevators.values()) {
-                long loaded = shadowElevator.getCountLoadedPeople();
-                totalLoadedCount += loaded;
-                long unloaded = shadowElevator.getCountUnloadedPeople();
-                totalUnloadedCount += unloaded;
-                PRINTER.printf("\tElevator [%s] people loaded: %d\n", shadowElevator.getId(), loaded);
-                PRINTER.printf("\tElevator [%s] people unloaded: %d\n", shadowElevator.getId(), unloaded);
-            }
-            PRINTER.printf("Total people loaded: %d\n", totalLoadedCount);
-            PRINTER.printf("Total people unloaded: %d\n", totalUnloadedCount);
-        }
-
-        public void printMaxes() {
-            for (ShadowElevator shadowElevator : shadowElevators.values()) {
-                PRINTER.printf("\tElevator [%s] max people loaded: %d\n", shadowElevator.getId(), shadowElevator.getMaxLoad());
-                if (PRINTER != System.out) {
-                    System.out.printf("\tElevator [%s] max people loaded: %d\n", shadowElevator.getId(), shadowElevator.getMaxLoad());
-                }
-            }
         }
     }
 
