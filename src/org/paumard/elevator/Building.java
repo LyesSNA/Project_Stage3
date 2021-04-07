@@ -49,7 +49,9 @@ public class Building {
 
         Elevator elevator1 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 1");
         Elevator elevator2 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 2");
-        Elevators elevators = new Elevators(List.of(elevator1, elevator2));
+        Elevator elevator3 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 3");
+        Elevator elevator4 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 4");
+        Elevators elevators = new Elevators(List.of(elevator1, elevator2, elevator3, elevator4));
 
         List<Event> startEvents = Event.createStartEventFor(elevators);
         events.put(time, startEvents);

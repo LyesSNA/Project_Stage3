@@ -7,7 +7,9 @@ import org.paumard.elevator.model.WaitingList;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.paumard.elevator.Building.ELEVATOR_LOADING_CAPACITY;
@@ -26,6 +28,7 @@ public class ShadowElevator {
     private int maxLoad;
     private String elevatorId;
     private WaitingList waitingList;
+    private Map<LocalTime, List<Person>> loadedPeople = new HashMap<>();
 
     public ShadowElevator(int elevatorCapacity, String elevatorId, WaitingList waitingList) {
         this.elevatorCapacity = elevatorCapacity;
@@ -60,6 +63,7 @@ public class ShadowElevator {
         if (peopleToUnload.size() > ELEVATOR_LOADING_CAPACITY) {
             peopleToUnload = peopleToUnload.subList(0, ELEVATOR_LOADING_CAPACITY);
         }
+        loadedPeople.computeIfAbsent(Building.time, key -> new ArrayList<>()).addAll(peopleToUnload);
         return peopleToUnload;
     }
 
