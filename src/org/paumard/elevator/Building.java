@@ -244,7 +244,10 @@ public class Building {
                                             .entrySet().stream()
                                             .min(Map.Entry.comparingByKey())
                                             .map(Map.Entry::getValue)
-                                            .orElseThrow();
+                                            .orElseGet(ArrayList::new);
+                            if (possibleEvents.isEmpty()) {
+                                continue;
+                            }
                             // 3rd criteria: least number of people
                             Function<Event, Integer> numberOfPeople =
                                     event -> shadowElevatorsRegistry.get(event.getElevator().getId()).getNumberOfPeople();
@@ -252,7 +255,10 @@ public class Building {
                                     .entrySet().stream()
                                     .min(Map.Entry.comparingByKey())
                                     .map(Map.Entry::getValue)
-                                    .orElseThrow();
+                                    .orElseGet(ArrayList::new);
+                            if (possibleEvents.isEmpty()) {
+                                continue;
+                            }
                             // 3rd criteria: random draw
                             Event selectedEvent = waitingList.chooseEventFrom(possibleEvents);
                             if (selectedEvent instanceof Event.AttemptToLoadFirstPerson) {
