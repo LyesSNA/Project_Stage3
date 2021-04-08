@@ -232,7 +232,12 @@ public class Building {
                             }
                             // 1st criteria: there is room in the elevator
                             Predicate<Event> roomAvailable =
-                                    event -> shadowElevatorsRegistry.get(event.getElevator().getId()).availableRoom();
+                                    event -> {
+                                        Event.AttemptToLoadPerson attemptToLoadPerson = (Event.AttemptToLoadPerson) event;
+                                        int peopleAlreadyLoading = attemptToLoadPerson.getPeopleToLoad().size();
+                                        int peopleInElevator = shadowElevatorsRegistry.get(event.getElevator().getId()).getNumberOfPeople();
+                                        return (peopleInElevator + peopleAlreadyLoading) < ELEVATOR_CAPACITY;
+                                    };
                             possibleEvents = possibleEvents.stream()
                                     .filter(roomAvailable)
                                     .collect(Collectors.toList());

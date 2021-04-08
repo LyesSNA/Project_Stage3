@@ -413,12 +413,11 @@ public class Event {
         }
     }
 
-    public static class AttemptToLoadFirstPerson extends Event {
-
+    public static class AttemptToLoadPerson extends Event {
         private List<Person> peopleToLoad = new ArrayList<>();
 
-        public AttemptToLoadFirstPerson(Elevator elevator, int currentFloor, List<Integer> nextFloors) {
-            super(elevator, FIRST_LOADING_ATTEMPT, currentFloor, nextFloors);
+        public AttemptToLoadPerson(Elevator elevator, String name, int currentFloor, List<Integer> nextFloors) {
+            super(elevator, name, currentFloor, nextFloors);
         }
 
         public void addPerson(Person person) {
@@ -430,20 +429,17 @@ public class Event {
         }
     }
 
-    public static class AttemptToLoadNextPerson extends Event {
+    public static class AttemptToLoadFirstPerson extends AttemptToLoadPerson {
 
-        private List<Person> peopleToLoad = new ArrayList<>();
+        public AttemptToLoadFirstPerson(Elevator elevator, int currentFloor, List<Integer> nextFloors) {
+            super(elevator, FIRST_LOADING_ATTEMPT, currentFloor, nextFloors);
+        }
+    }
+
+    public static class AttemptToLoadNextPerson extends AttemptToLoadPerson {
 
         public AttemptToLoadNextPerson(Elevator elevator, int currentFloor, List<Integer> nextFloors) {
             super(elevator, NEXT_LOADING_ATTEMPT, currentFloor, nextFloors);
-        }
-
-        public void addPerson(Person person) {
-            this.peopleToLoad.add(person);
-        }
-
-        public List<Person> getPeopleToLoad() {
-            return this.peopleToLoad;
         }
     }
 
