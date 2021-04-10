@@ -122,20 +122,20 @@ public class WaitingList {
                 if (random.nextFloat() < PROBABLITY_TO_CALL_FROM_1) {
                     indexFloor = 0;
                 } else {
-                    indexFloor = random.nextInt(Building.MAX_FLOOR);
+                    indexFloor = random.nextInt(Building.MAX_FLOOR - 1) + 1;
                 }
             } else if (time.isAfter(LocalTime.of(16, 30, 0))) {
                 if (random.nextFloat() < PROBABLITY_NOT_TO_CALL_FROM_1) {
                     indexFloor = random.nextInt(Building.MAX_FLOOR - 1) + 1;
                 } else {
-                    indexFloor = random.nextInt(Building.MAX_FLOOR);
+                    indexFloor = 0;
                 }
             } else {
                 indexFloor = random.nextInt(Building.MAX_FLOOR);
             }
 
             int indexDestinationFloor = -1;
-            if (time.isAfter(LocalTime.of(16, 30, 0)) && indexFloor != 1) {
+            if (time.isAfter(LocalTime.of(16, 30, 0)) && indexFloor != 0) {
                 if (random.nextFloat() < PROBABLITY_NOT_TO_CALL_FROM_1) {
                     indexDestinationFloor = 0;
                 } else {
