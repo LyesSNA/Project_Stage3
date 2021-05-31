@@ -5,7 +5,8 @@ import org.paumard.elevator.event.DIRECTION;
 import org.paumard.elevator.event.Event;
 import org.paumard.elevator.model.Person;
 import org.paumard.elevator.model.WaitingList;
-import org.paumard.elevator.student.DumbElevator;
+import org.paumard.elevator.student.DumpElevatorWhoTriesHard;
+import org.paumard.elevator.student.ElevatorForAngryPeople;
 import org.paumard.elevator.system.Elevators;
 import org.paumard.elevator.system.ShadowElevator;
 import org.paumard.elevator.system.ShadowElevators;
@@ -116,8 +117,9 @@ public class RunAsTest {
         int totalNumberOfPeople = waitingList.countPeople();
 
 //        Elevator elevator1 = new DumbElevatorForVIP(ELEVATOR_CAPACITY, "VIP 1");
-        Elevator elevator2 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 2");
-        Elevators elevators = new Elevators(List.of(elevator2));
+        ElevatorForAngryPeople elevator1 = new ElevatorForAngryPeople(ELEVATOR_CAPACITY, "Dumb");
+        Elevator elevator2 = new DumpElevatorWhoTriesHard(ELEVATOR_CAPACITY, "VIP", elevator1);
+        Elevators elevators = new Elevators(List.of(elevator1,elevator2));
 
         Map<String, Integer> startingFloors = new HashMap<>();
         for (int indexElevator = 0; indexElevator < elevators.count(); indexElevator++) {

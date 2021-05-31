@@ -4,7 +4,8 @@ import org.paumard.elevator.event.DIRECTION;
 import org.paumard.elevator.event.Event;
 import org.paumard.elevator.model.Person;
 import org.paumard.elevator.model.WaitingList;
-import org.paumard.elevator.student.DumbElevator;
+import org.paumard.elevator.student.DumpElevatorWhoTriesHard;
+import org.paumard.elevator.student.ElevatorForAngryPeople;
 import org.paumard.elevator.system.Elevators;
 import org.paumard.elevator.system.ShadowElevator;
 import org.paumard.elevator.system.ShadowElevators;
@@ -46,12 +47,10 @@ public class Building {
 
         WaitingList waitingList = WaitingList.getInstance();
         int totalNumberOfPeople = waitingList.countPeople();
-
-        Elevator elevator1 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 1");
-        Elevator elevator2 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 2");
-        Elevator elevator3 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 3");
-        Elevator elevator4 = new DumbElevator(ELEVATOR_CAPACITY, "Dumb 4");
-        Elevators elevators = new Elevators(List.of(elevator1, elevator2, elevator3, elevator4));
+        
+        ElevatorForAngryPeople elevator1 = new ElevatorForAngryPeople(ELEVATOR_CAPACITY, "Dumb");
+        Elevator elevator2 = new DumpElevatorWhoTriesHard(ELEVATOR_CAPACITY, "VIP", elevator1);
+        Elevators elevators = new Elevators(List.of(elevator1,elevator2));
 
         List<Event> startEvents = Event.createStartEventFor(elevators);
         events.put(time, startEvents);
